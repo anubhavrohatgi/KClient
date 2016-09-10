@@ -16,23 +16,15 @@
 
 void producer(KClient& client, const std::map<std::string, std::string>& params)
 {
-    /*
-     * Create producer using accumulated global configuration.
-    */
-
-    try {
+    try
+    {
         KProducer producer = client.create_producer();
         std::cout << "> Created producer " << producer.name() << std::endl;
 
-        /*
-        * Create topic handle.
-        */
+        // Create topic handle.
         KTopic topic = producer.create_topic(params.at("topic"));
 
-        /*
-         *  Produce some message
-         */
-
+        // Produce some message
         auto p_it = topic.getPartions().begin();
         for (size_t i = 0; i < 1000000; i++)
         {
@@ -49,7 +41,8 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
             ++p_it;
         }
 
-        while (producer.outq_len() > 0) {
+        while (producer.outq_len() > 0)
+        {
             std::cout << "Waiting for " << producer.outq_len() << std::endl;
             producer.poll(1000);
         }
@@ -63,10 +56,6 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
 
 void consumer(KClient& client, const std::map<std::string, std::string>& params)
 {
-    /*
-     * Create consumer using accumulated global configuration.
-    */
-
     if (params.find("group.id") != params.end())
         client.setGlobalConf("group.id", params.at("group.id"));
 
