@@ -60,14 +60,22 @@ void KTopic::for_each(uint32_t nth, int timeout_ms,
 
 void KQueue::for_each(int timeout_ms,
                       std::function<void(RdKafka::Message &)> msg_callback,
-                      std::function<void(RdKafka::Message &)> error_callback)
+                      std::function<void(RdKafka::Message &)> error_callback, bool exit_end)
 {
     EnvConsumeCb env_cb(msg_callback, error_callback);
-    bool run{true};
-    while (run)
+    while (true)
     {
-        _consumer->consume_callback(queue, timeout_ms, &env_cb, &run);
-        _consumer->poll(10);
+        bool run{true};
+        while (run)
+        {
+            _consumer->consume_callback(queue, timeout_ms, &env_cb, &run);
+            _consumer->poll(10);
+        }
+
+        if (exit_end)
+            break;
+
+        std::this_thread::sleep_for(std::chrono::duration<unsigned int, std::milli>(100));
     }
 }
 

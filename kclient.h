@@ -59,7 +59,7 @@ public:
     {}
     void for_each(int timeout_ms,
                           std::function<void(RdKafka::Message &)> msg_callback,
-                          std::function<void(RdKafka::Message &)> error_callback);
+                          std::function<void(RdKafka::Message &)> error_callback, bool exit_end);
 
     void setConsumer(RdKafka::Consumer* c) { _consumer = c; }
 private:

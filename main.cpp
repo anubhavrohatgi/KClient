@@ -70,6 +70,10 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
     if (params.find("group.id") != params.end())
         client.setGlobalConf("group.id", params.at("group.id"));
 
+    bool exit_end{false};
+    if (params.find("exit_end") != params.end() && params.at("exit_end") == "true")
+        exit_end = true;
+
     try
     {
         KConsumer consumer = client.create_consumer();
@@ -84,7 +88,7 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
             std::cout << static_cast<const char *>(message.payload()) << "\n";
         }, [](RdKafka::Message& message){
             std::cerr << "Error reading message or EOF\n";
-        });
+        }, exit_end);
     }
     catch (std::exception& ex)
     {
