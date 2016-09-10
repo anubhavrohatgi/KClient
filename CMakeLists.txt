@@ -10,7 +10,7 @@ FIND_PACKAGE (Threads)
 
 SET(Boost_USE_MULTITHREADED ON)
 SET(Boost_USE_STATIC_LIBS ON)
-FIND_PACKAGE (Boost 1.59 COMPONENTS filesystem iostreams system serialization REQUIRED)
+FIND_PACKAGE (Boost 1.59 REQUIRED)
 
 
 enable_testing()
