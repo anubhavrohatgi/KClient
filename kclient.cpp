@@ -153,7 +153,6 @@ bool KClient::loadMetadata(const std::string &topic_str)
     if (metadata == nullptr)
         return false;
 
-    const RdKafka::Metadata::TopicMetadataVector* v_topics = metadata->topics();
     for (const RdKafka::TopicMetadata* tm : *metadata->topics())
     {
         std::cout << "found topic: " << tm->topic() << "\n";
@@ -214,6 +213,8 @@ KTopic create_topic(const std::string &topic_str, T* h, RdKafka::Conf* topic_con
     KTopic ktopic{topic_str, topic, h};
     if (map_partions != nullptr)
         ktopic.setPartionsInfo(map_partions->at(topic_str));
+
+    return ktopic;
 }
 
 KTopic KProducer::create_topic(const std::string &topic_str)

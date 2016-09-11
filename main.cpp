@@ -147,7 +147,6 @@ int main(int argc, char* argv[])
 
 
     KClient client(params["brokers"]);
-    std::string topic_str{params["topic"]};
     mode_t mode{PRODUCER};
 
     if (params["mode"] == "producer")
@@ -176,7 +175,7 @@ int main(int argc, char* argv[])
 
 
     // load metadata
-    if (!client.loadMetadata())
+    if (!client.loadMetadata(params["topic"]))
     {
         std::cerr << "Problem loading metadata\n";
         exit(1);

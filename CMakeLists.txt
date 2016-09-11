@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(TicketKafka)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 ${EXTRA_LDFLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++14 ${EXTRA_LDFLAGS}")
 set(CMAKE_MODULE_PATH "~/cmake/Modules" ${CMAKE_MODULE_PATH})
 
 MESSAGE(STATUS ${CMAKE_MODULE_PATH})

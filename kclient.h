@@ -156,9 +156,9 @@ public:
     }
 
 private:
-    RdKafka::Producer* _producer;
-    RdKafka::Conf* topic_conf;
-    const std::map<std::string, std::set<int32_t>>* map_partions;
+    RdKafka::Producer* _producer{nullptr};
+    RdKafka::Conf* topic_conf{nullptr};
+    const std::map<std::string, std::set<int32_t>>* map_partions{nullptr};
 };
 
 
@@ -182,10 +182,9 @@ public:
         map_partions = map_part;
     }
 private:
-    RdKafka::Consumer *_consumer;
-    RdKafka::Conf *topic_conf;
-
-    const std::map<std::string, std::set<int32_t>>* map_partions;
+    RdKafka::Consumer *_consumer{nullptr};
+    RdKafka::Conf *topic_conf{nullptr};
+    const std::map<std::string, std::set<int32_t>>* map_partions{nullptr};
 };
 
 
@@ -203,6 +202,7 @@ public:
     {
         brokers = std::move(i_brokers);
         setGlobalConf("bootstrap.servers", brokers);
+        setGlobalConf("metadata.broker.list", brokers);
     }
 
     bool setGlobalConf(const std::string& param, const std::string& val)
