@@ -25,7 +25,6 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
         KTopic topic = producer.create_topic(params.at("topic"));
 
         // Produce some message
-        //auto p_it = topic.getPartions().begin();
         for (size_t i = 0; i < 1000000; i++)
         {
             /*if (p_it == topic.getPartions().end())
