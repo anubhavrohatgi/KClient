@@ -164,7 +164,7 @@ bool KClient::loadMetadata(const std::string &topic_str)
         }
     }
 
-    return false;
+    return true;
 }
 
 KProducer KClient::create_producer()

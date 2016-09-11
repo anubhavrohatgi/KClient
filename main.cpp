@@ -25,20 +25,18 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
         KTopic topic = producer.create_topic(params.at("topic"));
 
         // Produce some message
-        auto p_it = topic.getPartions().begin();
+        //auto p_it = topic.getPartions().begin();
         for (size_t i = 0; i < 1000000; i++)
         {
-            if (p_it == topic.getPartions().end())
-                p_it = topic.getPartions().begin();
+            /*if (p_it == topic.getPartions().end())
+                p_it = topic.getPartions().begin();*/
 
-            RdKafka::ErrorCode resp = topic.produce("Hello World! " + std::to_string(i), *p_it);
-
-            if (resp != RdKafka::ERR_NO_ERROR)
-            {
-                std::cerr << "> Produce failed: " << RdKafka::err2str(resp) << std::endl;
-                break;
-            }
-            ++p_it;
+            RdKafka::ErrorCode resp = topic.produce("Hello World! " + std::to_string(i), 0);
+            if (resp == RdKafka::ERR__QUEUE_FULL)
+                producer.poll(1000);
+            else if (resp != RdKafka::ERR_NO_ERROR)
+                std::cerr << "> Producer error: " << RdKafka::err2str(resp) << "\n";
+            //++p_it;
         }
 
         while (producer.outq_len() > 0)

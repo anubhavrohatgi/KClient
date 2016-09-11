@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(TicketKafka)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++14 ${EXTRA_LDFLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic-errors -std=c++14 ${EXTRA_LDFLAGS}")
 set(CMAKE_MODULE_PATH "~/cmake/Modules" ${CMAKE_MODULE_PATH})
 
 MESSAGE(STATUS ${CMAKE_MODULE_PATH})
@@ -10,7 +10,7 @@ FIND_PACKAGE (Threads)
 
 SET(Boost_USE_MULTITHREADED ON)
 SET(Boost_USE_STATIC_LIBS ON)
-FIND_PACKAGE (Boost 1.59 REQUIRED)
+#FIND_PACKAGE (Boost 1.59 REQUIRED)
 
 
 enable_testing()
