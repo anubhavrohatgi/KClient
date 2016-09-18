@@ -1,4 +1,4 @@
-# KClient
+## KClient - Kafka library based on librdkafka 
 
 Tiny modern C++ wrapper for [librdkafka](https://github.com/edenhill/librdkafka) library.
 
@@ -8,7 +8,7 @@ Tiny modern C++ wrapper for [librdkafka](https://github.com/edenhill/librdkafka)
     cd build
     cmake ..
 
-### Consumer group example
+#### Consumer group example
     //setup client wit the list of boostrap servers
     KClient client("localhost");
     
@@ -43,7 +43,7 @@ Tiny modern C++ wrapper for [librdkafka](https://github.com/edenhill/librdkafka)
     }
 
     
-### Producer example
+#### Producer example
     //setup client wit the list of boostrap servers
     KClient client("localhost");
     
