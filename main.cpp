@@ -8,6 +8,7 @@
 #include <map>
 #include <thread>
 #include <mutex>
+#include <sstream>
 #include <cstring>
 #include "util.h"
 #include "kclient.h"
@@ -30,7 +31,7 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
             /*if (p_it == topic.getPartions().end())
                 p_it = topic.getPartions().begin();*/
 
-            RdKafka::ErrorCode resp = topic.produce("Hello World! " + std::to_string(i), 0);
+            RdKafka::ErrorCode resp = topic.produce("Hello World! " + std::to_string(24+i%130), 0);
             if (resp == RdKafka::ERR__QUEUE_FULL)
                 producer.poll(1000);
             else if (resp != RdKafka::ERR_NO_ERROR)
@@ -65,16 +66,36 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
         KConsumer consumer = client.create_consumer();
         std::cout << "> Created consumer " << consumer.name() << std::endl;
 
-        KQueue queue = consumer.create_queue();
-        queue.for_each(1000, [](RdKafka::Message& message){
+        std::vector<double> temp_avg;
+        KQueue queue = consumer.create_queue(params.at("topic"));
+
+        queue.for_each(1000, [&temp_avg](const RdKafka::Message& message){
             std::cout << "Read msg at offset " << message.offset() << "\n";
             if (message.key())
                 std::cout << "Key: " << *message.key() << "\n";
 
-            std::cout << static_cast<const char *>(message.payload()) << "\n";
-        }, [](RdKafka::Message& message){
+            /*std::stringstream smsg;
+            smsg << static_cast<const char *>(message.payload());
+            std::string s;
+            double temp;
+            smsg >> s >> s >> temp;
+            std::cout << temp << "\n";
+            temp_avg.push_back(temp);*/
+
+            std::cout << message.payload() << std::endl;
+
+        }, [](const RdKafka::Message& message){
             std::cerr << "Error reading message or EOF\n";
         }, exit_end);
+
+        double sum = std::accumulate(temp_avg.begin(), temp_avg.end(), 0.0, [](double a, double b){
+           return a+b;
+        });
+
+        if (!temp_avg.empty())
+            std::cout << "size: " << temp_avg.size() << ", temp Avg: " << sum/(double)temp_avg.size() << "\n";
+        else
+            std::cout << "no data!\n";
     }
     catch (std::exception& ex)
     {
@@ -130,6 +151,10 @@ int main(int argc, char* argv[])
         {
             params["compression"] = "snappy";
             i++;
+        }
+        else if(strcmp(argv[i], "--exit-end") == 0)
+        {
+            params["exit_end"] = "true";
         }
     }
 

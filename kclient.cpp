@@ -5,74 +5,27 @@
 #include "util.h"
 #include <mutex>
 #include <thread>
-#include <map>
-#include <set>
-#include <memory>
-#include <functional>
 #include <librdkafka/rdkafkacpp.h>
 #include <iostream>
 #include "kclient.h"
 
 
-void KTopic::for_each_part(int32_t partition, int timeout_ms,
-                   std::function<void(RdKafka::Message &)> msg_callback,
-                   std::function<void(RdKafka::Message &)> error_callback)
-{
-    EnvConsumeCb env_cb(msg_callback, error_callback);
-
-    bool run{true};
-    while (run)
-    {
-        _consumer->consume_callback(_topic, partition, timeout_ms, &env_cb, &run);
-        _consumer->poll(0);
-    }
-}
-
-
-void KTopic::for_each(uint32_t nth, int timeout_ms,
-              std::function<void(RdKafka::Message &)> msg_callback,
-              std::function<void(RdKafka::Message &)> error_callback)
-{
-    std::mutex m;
-    std::vector<std::thread> th_v;
-
-    const auto p_part = kutil::partions(_partions, nth);
-    for (const auto& vpar : p_part)
-    {
-        th_v.push_back(std::thread([this, vpar, timeout_ms, &m, &msg_callback, &error_callback]{
-            EnvConsumeCb env_cb(msg_callback, error_callback);
-
-            bool run{true};
-            while (run)
-            {
-                std::lock_guard<std::mutex> l(m);
-                for (auto par : vpar)
-                    _consumer->consume_callback(_topic, par, timeout_ms, &env_cb, &run);
-                _consumer->poll(10);
-            }
-        }));
-    }
-
-    for (auto& th : th_v)
-        th.join();
-}
-
-
 void KQueue::for_each(int timeout_ms,
-                      std::function<void(RdKafka::Message &)> msg_callback,
-                      std::function<void(RdKafka::Message &)> error_callback, bool exit_end)
+                      std::function<void(const RdKafka::Message &)> msg_callback,
+                      std::function<void(const RdKafka::Message &)> error_callback, bool exit_end)
 {
     EnvConsumeCb env_cb(msg_callback, error_callback);
     while (true)
     {
-        bool run{true};
-        while (run)
+        bool params[] = {true, false};
+        while (params[0])
         {
-            _consumer->consume_callback(queue, timeout_ms, &env_cb, &run);
+            RdKafka::Message* msg = _consumer->consume(timeout_ms);
+            env_cb.consume_cb(*msg, &params);
             _consumer->poll(10);
         }
 
-        if (exit_end)
+        if (exit_end || params[1])
             break;
 
         std::this_thread::sleep_for(std::chrono::duration<unsigned int, std::milli>(100));
@@ -96,13 +49,17 @@ RdKafka::Metadata* KTopic::metadata(int timeout_ms)
 }
 
 
-void EnvConsumeCb::consume_cb(RdKafka::Message &message, void *opaque) {
-    bool *run = reinterpret_cast<bool*>(opaque);
+void EnvConsumeCb::consume_cb(const RdKafka::Message& message, void *opaque) {
+    bool *op = reinterpret_cast<bool*>(opaque);
+    bool *run = &op[0];
+    bool *end = &op[1];
 
     switch (message.err())
     {
         case RdKafka::ERR__TIMED_OUT:
-            break;
+            *run = false;
+            *end = true;
+            return;
 
         case RdKafka::ERR_NO_ERROR:
             /* Real message */
@@ -112,31 +69,33 @@ void EnvConsumeCb::consume_cb(RdKafka::Message &message, void *opaque) {
         case RdKafka::ERR__PARTITION_EOF:
             /* Last message */
             _f_err_callback(message);
-            *run  = false;
-            break;
+            *run = false;
+            *end = true;
+            return;
 
         case RdKafka::ERR__UNKNOWN_TOPIC:
         case RdKafka::ERR__UNKNOWN_PARTITION:
             std::cerr << "Consume failed: " << message.errstr() << std::endl;
-            *run  = false;
-            break;
+            *end = true;
+            return;
 
         default:
             /* Errors */
             std::cerr << "Consume failed: " << message.errstr() << std::endl;
-            *run  = false;
+            *run = false;
             _f_err_callback(message);
     }
-    _f_msg_callback(message);
 }
+
 
 KConsumer KClient::create_consumer()
 {
     std::string errstr;
-    RdKafka::Consumer *consumer = RdKafka::Consumer::create(conf, errstr);
+    RdKafka::KafkaConsumer *consumer = RdKafka::KafkaConsumer::create(conf, errstr);
     if (!consumer) {
         throw std::runtime_error("Failed to create consumer: " + errstr);
     }
+
 
     auto kconsumer = KConsumer(consumer);
     kconsumer.setTopicConf(topic_conf);
@@ -227,10 +186,15 @@ KTopic KConsumer::create_topic(const std::string &topic_str)
     return ::create_topic(topic_str, _consumer, topic_conf, map_partions);
 }
 
-KQueue KConsumer::create_queue()
+KQueue KConsumer::create_queue(const std::string& topic)
+{
+    return create_queue(std::vector<std::string>{topic});
+}
+
+KQueue KConsumer::create_queue(const std::vector<std::string>& topics)
 {
     KQueue q{RdKafka::Queue::create(_consumer)};
     q.setConsumer(_consumer);
+    _consumer->subscribe(topics);
     return q;
 }
-
