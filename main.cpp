@@ -69,7 +69,7 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
         std::vector<double> temp_avg;
         KQueue queue = consumer.create_queue(params.at("topic"));
 
-        queue.for_each(1000, [&temp_avg](const RdKafka::Message& message){
+        queue.for_each(500, [&temp_avg](const RdKafka::Message& message){
             std::cout << "Read msg at offset " << message.offset() << "\n";
             if (message.key())
                 std::cout << "Key: " << *message.key() << "\n";
@@ -96,6 +96,8 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
             std::cout << "size: " << temp_avg.size() << ", temp Avg: " << sum/(double)temp_avg.size() << "\n";
         else
             std::cout << "no data!\n";
+
+        consumer.close();
     }
     catch (std::exception& ex)
     {
@@ -169,7 +171,7 @@ int main(int argc, char* argv[])
 
 
     KClient client(params["brokers"]);
-    mode_t mode{PRODUCER};
+    mode_t mode;
 
     if (params["mode"] == "producer")
         mode = PRODUCER;

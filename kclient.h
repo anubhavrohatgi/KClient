@@ -160,6 +160,9 @@ public:
     {
         map_partions = map_part;
     }
+
+    void close();
+
 private:
     RdKafka::KafkaConsumer *_consumer{nullptr};
     RdKafka::Conf *topic_conf{nullptr};
@@ -182,6 +185,8 @@ public:
         brokers = std::move(i_brokers);
         setGlobalConf("bootstrap.servers", brokers);
         setGlobalConf("metadata.broker.list", brokers);
+
+        default_topic_conf();
     }
 
     bool setGlobalConf(const std::string& param, const std::string& val)
@@ -206,6 +211,15 @@ public:
     KConsumer create_consumer();
     bool loadMetadata(const std::string& topic_str = "");
 
+    void default_topic_conf()
+    {
+        std::string errstr;
+        RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
+        setConf(tconf, "auto.offset.reset", "earliest");
+
+        conf->set("default_topic_conf", tconf, errstr);
+        std::cout << errstr << std::endl;
+    }
 protected:
     bool setConf(RdKafka::Conf * p_conf, const std::string& param, const std::string& val)
     {

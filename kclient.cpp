@@ -22,7 +22,7 @@ void KQueue::for_each(int timeout_ms,
         {
             RdKafka::Message* msg = _consumer->consume(timeout_ms);
             env_cb.consume_cb(*msg, &params);
-            _consumer->poll(10);
+            _consumer->poll(30);
         }
 
         if (exit_end || params[1])
@@ -58,7 +58,7 @@ void EnvConsumeCb::consume_cb(const RdKafka::Message& message, void *opaque) {
     {
         case RdKafka::ERR__TIMED_OUT:
             *run = false;
-            *end = true;
+            //*end = true;
             return;
 
         case RdKafka::ERR_NO_ERROR:
@@ -97,7 +97,7 @@ KConsumer KClient::create_consumer()
     }
 
 
-    auto kconsumer = KConsumer(consumer);
+    KConsumer kconsumer{consumer};
     kconsumer.setTopicConf(topic_conf);
     kconsumer.setPartionsInfo(&map_partions);
     return kconsumer;
@@ -194,7 +194,13 @@ KQueue KConsumer::create_queue(const std::string& topic)
 KQueue KConsumer::create_queue(const std::vector<std::string>& topics)
 {
     KQueue q{RdKafka::Queue::create(_consumer)};
+
     q.setConsumer(_consumer);
     _consumer->subscribe(topics);
     return q;
+}
+
+void KConsumer::close()
+{
+    _consumer->close();
 }
