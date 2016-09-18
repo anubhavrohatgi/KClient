@@ -92,7 +92,8 @@ KConsumer KClient::create_consumer()
 {
     std::string errstr;
     RdKafka::KafkaConsumer *consumer = RdKafka::KafkaConsumer::create(conf, errstr);
-    if (!consumer) {
+    if (!consumer)
+    {
         throw std::runtime_error("Failed to create consumer: " + errstr);
     }
 
