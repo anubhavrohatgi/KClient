@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include "kclient.h"
+#include <zmq.hpp>
 
 
 void produce_file(const std::string& fname, KProducer& producer, KTopic& topic)
@@ -31,12 +32,6 @@ void produce_file(const std::string& fname, KProducer& producer, KTopic& topic)
                 break;
         }
     }
-
-/*    while (producer.outq_len() > 0)
-    {
-        std::cout << "Waiting for " << producer.outq_len() << std::endl;
-        producer.poll(100);
-    }*/
 }
 
 void produce_file(const std::string& fname, std::ofstream& fout)
@@ -70,9 +65,15 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
         for (directory_entry& x : directory_iterator(p))
         {
             const auto fname = x.path().string();
-            //produce_file(fname, producer, topic);
-            produce_file(x.path().string(), f_out);
+            produce_file(fname, producer, topic);
+            //produce_file(x.path().string(), f_out);
             std::cout << "done: " << fname << "\n";
+        }
+
+        while (producer.outq_len() > 0)
+        {
+            std::cout << "Waiting for " << producer.outq_len() << std::endl;
+            producer.poll(100);
         }
     }
     catch (std::exception& ex)
