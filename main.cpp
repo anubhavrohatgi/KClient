@@ -139,7 +139,7 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 
 int main(int argc, char* argv[])
 {
-    enum mode_t {PRODUCER, CONUSMER};
+    enum mode_t {PRODUCER, CONUSMER, ZEROMQ};
 
     char hostname[128];
     if (gethostname(hostname, sizeof(hostname)))
@@ -189,6 +189,10 @@ int main(int argc, char* argv[])
         {
             params["exit_end"] = "true";
         }
+        else if(strcmp(argv[i], "--server-zmq") == 0)
+        {
+            params["mode"] = "server_zmq";
+        }
     }
 
     if (params["brokers"].empty())
@@ -208,6 +212,8 @@ int main(int argc, char* argv[])
         mode = PRODUCER;
     else if (params["mode"] == "consumer")
         mode = CONUSMER;
+    else if (params["mode"] == "server_zmq")
+        mode = ZEROMQ;
     else
     {
         std::cerr << "unk mode!\n";

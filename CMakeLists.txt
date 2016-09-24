@@ -18,7 +18,7 @@ INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIR})
 enable_testing()
 find_package(GTest REQUIRED)
 
-set(SOURCE_FILES main.cpp util.h kclient.cpp)
+set(SOURCE_FILES main.cpp util.h kclient.cpp ZmqServer.cpp ZmqServer.h)
 
 add_executable(TicketKafka ${SOURCE_FILES})
 add_executable(TicketKafkaTest test.cpp)
