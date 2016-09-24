@@ -1,48 +1,78 @@
 #include <iostream>
 
-#include <unistd.h>
+#include <boost/filesystem.hpp>
 #include <librdkafka/rdkafkacpp.h>
-#include <functional>
-#include <memory>
 #include <set>
 #include <map>
 #include <thread>
 #include <mutex>
+#include <fstream>
 #include <sstream>
-#include <cstring>
-#include "util.h"
 #include "kclient.h"
 
+
+void produce_file(const std::string& fname, KProducer& producer, KTopic& topic)
+{
+    std::ifstream f{fname};
+
+    while (f)
+    {
+        std::string line;
+        std::getline(f, line);
+
+        while(true)
+        {
+            RdKafka::ErrorCode resp = topic.produce(line, 0);
+            if (resp == RdKafka::ERR__QUEUE_FULL)
+                producer.poll(10);
+            else if (resp != RdKafka::ERR_NO_ERROR)
+                std::cerr << "> Producer error: " << RdKafka::err2str(resp) << "\n";
+            else
+                break;
+        }
+    }
+
+/*    while (producer.outq_len() > 0)
+    {
+        std::cout << "Waiting for " << producer.outq_len() << std::endl;
+        producer.poll(100);
+    }*/
+}
+
+void produce_file(const std::string& fname, std::ofstream& fout)
+{
+    std::ifstream f{fname};
+    std::string line;
+
+    while(f)
+    {
+        std::getline(f, line);
+        fout << line << "\n";
+    }
+    fout.flush();
+}
 
 
 void producer(KClient& client, const std::map<std::string, std::string>& params)
 {
+    using namespace boost::filesystem;
     try
     {
+        std::ofstream f_out{"test_out.txt"};
         KProducer producer = client.create_producer();
         std::cout << "> Created producer " << producer.name() << std::endl;
 
         // Create topic handle.
         KTopic topic = producer.create_topic(params.at("topic"));
 
-        // Produce some message
-        for (size_t i = 0; i < 1000000; i++)
+        //
+        path p("/mnt/disk-master/DATA_TX");
+        for (directory_entry& x : directory_iterator(p))
         {
-            /*if (p_it == topic.getPartions().end())
-                p_it = topic.getPartions().begin();*/
-
-            RdKafka::ErrorCode resp = topic.produce("Hello World! " + std::to_string(24+i%130), 0);
-            if (resp == RdKafka::ERR__QUEUE_FULL)
-                producer.poll(1000);
-            else if (resp != RdKafka::ERR_NO_ERROR)
-                std::cerr << "> Producer error: " << RdKafka::err2str(resp) << "\n";
-            //++p_it;
-        }
-
-        while (producer.outq_len() > 0)
-        {
-            std::cout << "Waiting for " << producer.outq_len() << std::endl;
-            producer.poll(1000);
+            const auto fname = x.path().string();
+            //produce_file(fname, producer, topic);
+            produce_file(x.path().string(), f_out);
+            std::cout << "done: " << fname << "\n";
         }
     }
     catch (std::exception& ex)

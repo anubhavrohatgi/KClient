@@ -97,7 +97,6 @@ KConsumer KClient::create_consumer()
         throw std::runtime_error("Failed to create consumer: " + errstr);
     }
 
-
     KConsumer kconsumer{consumer};
     kconsumer.setTopicConf(topic_conf);
     kconsumer.setPartionsInfo(&map_partions);

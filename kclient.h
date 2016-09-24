@@ -80,7 +80,7 @@ public:
             _topic_name{std::move(topic_name)}, _topic{topic}, _consumer{consumer}
     {}
 
-    RdKafka::ErrorCode produce(std::string msg, int32_t partition)
+    RdKafka::ErrorCode produce(const std::string& msg, int32_t partition)
     {
         return _producer->produce(_topic, partition,
                                   RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
