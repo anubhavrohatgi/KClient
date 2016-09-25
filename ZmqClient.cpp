@@ -3,18 +3,18 @@
 //
 
 #include "ZmqClient.h"
+#include "zhelpers.hpp"
 
-ZmqClient::ZmqClient(const std::string &ip)
-        : ctx{3}
-        , c_socket{ctx, ZMQ_REQ}
+ZmqClient::ZmqClient()
+        : ctx{1}
+        , c_socket{ctx, ZMQ_PUB}
 {
-    c_socket.connect("tcp://" + ip + ":5559");
+    c_socket.bind("tcp://*:5560");
 }
 
 void ZmqClient::send(const std::string &msg)
 {
-    zmq::message_t req;
-    c_socket.send(msg.c_str(), msg.size());
-    c_socket.recv(&req);
+    s_sendmore(c_socket, topic);
+    s_send(c_socket, msg);
 }
 

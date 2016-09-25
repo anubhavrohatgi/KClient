@@ -6,12 +6,13 @@
 #define TICKETKAFKA_ZMQCLIENT_H
 
 #include <zmq.hpp>
-
+#include <thread>
+#include <chrono>
 
 class ZmqClient
 {
 public:
-    ZmqClient(const std::string& ip);
+    ZmqClient();
 
     void send(const std::string& msg);
 
@@ -22,6 +23,7 @@ public:
 private:
     zmq::context_t ctx;
     zmq::socket_t c_socket;
+    std::string topic{"METEO"};
 };
 
 

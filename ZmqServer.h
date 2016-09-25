@@ -15,39 +15,24 @@ class ZmqServer
 {
 public:
     ZmqServer()
-    : ctx{3}
-    , clients{ctx, ZMQ_ROUTER}
-    , workers{ctx, ZMQ_DEALER}
+    : ctx{1}
+    , subscriber{ctx, ZMQ_SUB}
     {
-        clients.bind(c_endpoint);
-        workers.bind(w_endpoint);
+        subscriber.connect(c_endpoint);
+        subscriber.setsockopt(ZMQ_SUBSCRIBE, "METEO", 1);
     }
 
-    void run()
-    {
-        add_worker();
-        zmq::proxy(clients, workers, nullptr);
-
-        for (auto& th : v_th)
-            th.join();
-    }
+    void run();
 
     ~ZmqServer()
     {
-        zmq_close(clients);
-        zmq_close(workers);
+        zmq_close(subscriber);
     }
-
-protected:
-    void add_worker();
 
 private:
     zmq::context_t ctx;
-    zmq::socket_t clients;
-    zmq::socket_t workers;
-    std::string c_endpoint{"tcp://*:5559"};
-    std::string w_endpoint{"inproc://workerbus"};
-    std::vector<std::thread> v_th;
+    zmq::socket_t subscriber;
+    std::string c_endpoint{"tcp://127.0.0.1:5560"};
 };
 
 

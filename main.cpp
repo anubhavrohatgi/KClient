@@ -49,17 +49,19 @@ void produce_file(const std::string& fname, std::ofstream& fout)
     fout.flush();
 }
 
-void produce_file(const std::string& fname, ZmqClient& out)
+
+void produce_file(const std::string& fname, ZmqClient& pub)
 {
     std::ifstream f{fname};
     std::string line;
 
-    while(f)
+    while (f)
     {
         std::getline(f, line);
-        out.send(line);
+        pub.send(line);
     }
 }
+
 
 void producer(KClient& client, const std::map<std::string, std::string>& params)
 {
@@ -160,7 +162,7 @@ void zmq_server()
 void zmq_client()
 {
     using namespace boost::filesystem;
-    ZmqClient zmqClient{"127.0.0.1"};
+    ZmqClient zmqClient;
 
     path p("/mnt/disk-master/DATA_TX");
     for (directory_entry& x : directory_iterator(p))
