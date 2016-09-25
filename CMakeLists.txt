@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -pedantic-errors -O3 -
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -pedantic-errors -O3 -std=c++14")
 
 add_executable(TicketKafka ${SOURCE_FILES})
-add_executable(TicketKafkaTest test.cpp)
+add_executable(TicketKafkaTest test.cpp util.cpp util.h)
 
 target_link_libraries (TicketKafka ${LibRDKafka_LIBRARIES} Boost::system Boost::filesystem ${ZMQ_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(TicketKafkaTest GTest::main ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(TicketKafkaTest GTest::main ${ZMQ_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

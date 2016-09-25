@@ -21,7 +21,7 @@ void ZmqServer::add_worker()
                 zmq::message_t request;
                 socket.recv(&request);
                 const auto msg_str = kutil::to_string(request);
-                if(msg_str == "stop")
+                if(msg_str == "exit")
                     break;
                 else
                     buffer.push_back(msg_str);

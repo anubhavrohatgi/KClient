@@ -32,6 +32,13 @@ public:
             th.join();
     }
 
+    ~ZmqServer()
+    {
+        zmq_close(clients);
+        zmq_close(workers);
+    }
+
+protected:
     void add_worker();
 
 private:

@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 #include "kclient.h"
+#include "ZmqServer.h"
+#include "ZmqClient.h"
 #include <zmq.hpp>
 
 
@@ -47,6 +49,17 @@ void produce_file(const std::string& fname, std::ofstream& fout)
     fout.flush();
 }
 
+void produce_file(const std::string& fname, ZmqClient& out)
+{
+    std::ifstream f{fname};
+    std::string line;
+
+    while(f)
+    {
+        std::getline(f, line);
+        out.send(line);
+    }
+}
 
 void producer(KClient& client, const std::map<std::string, std::string>& params)
 {
@@ -137,9 +150,32 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 }
 
 
+void zmq_server()
+{
+    ZmqServer zmqServer;
+    zmqServer.run();
+}
+
+
+void zmq_client()
+{
+    using namespace boost::filesystem;
+    ZmqClient zmqClient{"127.0.0.1"};
+
+    path p("/mnt/disk-master/DATA_TX");
+    for (directory_entry& x : directory_iterator(p))
+    {
+        const auto fname = x.path().string();
+        produce_file(fname, zmqClient);
+        std::cout << "done: " << fname << "\n";
+    }
+    zmqClient.send("exit");
+}
+
+
 int main(int argc, char* argv[])
 {
-    enum mode_t {PRODUCER, CONUSMER, ZEROMQ};
+    enum mode_t {PRODUCER, CONUSMER, ZEROMQ_SERVER, ZEROMQ_CLIENT};
 
     char hostname[128];
     if (gethostname(hostname, sizeof(hostname)))
@@ -185,14 +221,6 @@ int main(int argc, char* argv[])
             params["compression"] = "snappy";
             i++;
         }
-        else if(strcmp(argv[i], "--exit-end") == 0)
-        {
-            params["exit_end"] = "true";
-        }
-        else if(strcmp(argv[i], "--server-zmq") == 0)
-        {
-            params["mode"] = "server_zmq";
-        }
     }
 
     if (params["brokers"].empty())
@@ -212,8 +240,10 @@ int main(int argc, char* argv[])
         mode = PRODUCER;
     else if (params["mode"] == "consumer")
         mode = CONUSMER;
-    else if (params["mode"] == "server_zmq")
-        mode = ZEROMQ;
+    else if (params["mode"] == "zmq-server")
+        mode = ZEROMQ_SERVER;
+    else if (params["mode"] == "zmq-client")
+        mode = ZEROMQ_CLIENT;
     else
     {
         std::cerr << "unk mode!\n";
@@ -249,6 +279,12 @@ int main(int argc, char* argv[])
             break;
         case CONUSMER:
             consumer(client, params);
+            break;
+        case ZEROMQ_SERVER:
+            zmq_server();
+            break;
+        case ZEROMQ_CLIENT:
+            zmq_client();
             break;
     }
 
