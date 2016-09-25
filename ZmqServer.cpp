@@ -8,7 +8,7 @@
 void ZmqServer::add_worker()
 {
     // start n theads
-    for (size_t i = 0; i < 3; i++)
+    for (size_t i = 0; i < 1; i++)
     {
         v_th.emplace_back([this, th_id = i]{
             std::ofstream f{"out_" + std::to_string(th_id) + ".txt"};
@@ -21,17 +21,22 @@ void ZmqServer::add_worker()
                 zmq::message_t request;
                 socket.recv(&request);
                 const auto msg_str = kutil::to_string(request);
-                if(msg_str == "exit")
+                socket.send(nullptr, 0);
+                if(msg_str == "exit") {
                     break;
-                else
+                }
+                else {
                     buffer.push_back(msg_str);
+                }
 
                 if (buffer.size() == 100)
                 {
-                    for(const auto& x : buffer)
+                    for(const auto& x : buffer) {
                         f << x << "\n";
+                    }
+                    f.flush();
+                    buffer.clear();
                 }
-                buffer.clear();
             }
             for(const auto& x : buffer)
                 f << x << "\n";

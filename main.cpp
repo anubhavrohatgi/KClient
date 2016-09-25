@@ -173,6 +173,34 @@ void zmq_client()
 }
 
 
+KClient create_kclient(std::map<std::string, std::string>& params)
+{
+
+    /*
+     * Set basic configuration
+     */
+    KClient client(params["brokers"]);
+    if (!client.setGlobalConf("statistics.interval.ms", "5000"))
+        exit(1);
+
+    if (!params["compression"].empty() && !client.setGlobalConf("compression.codec", "snappy"))
+        exit(1);
+
+    if (!client.setGlobalConf("client.id", params["client.id"]))
+        exit(1);
+
+
+    // load metadata
+    if (!client.loadMetadata(params["topic"]))
+    {
+        std::cerr << "Problem loading metadata\n";
+        exit(1);
+    }
+
+    return client;
+}
+
+
 int main(int argc, char* argv[])
 {
     enum mode_t {PRODUCER, CONUSMER, ZEROMQ_SERVER, ZEROMQ_CLIENT};
@@ -233,9 +261,7 @@ int main(int argc, char* argv[])
         params["client.id"] = hostname;
 
 
-    KClient client(params["brokers"]);
     mode_t mode;
-
     if (params["mode"] == "producer")
         mode = PRODUCER;
     else if (params["mode"] == "consumer")
@@ -250,36 +276,20 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-
-    /*
-     * Set basic configuration
-     */
-
-    if (!client.setGlobalConf("statistics.interval.ms", "5000"))
-        exit(1);
-
-    if (!params["compression"].empty() && !client.setGlobalConf("compression.codec", "snappy"))
-        exit(1);
-
-    if (!client.setGlobalConf("client.id", params["client.id"]))
-        exit(1);
-
-
-    // load metadata
-    if (!client.loadMetadata(params["topic"]))
-    {
-        std::cerr << "Problem loading metadata\n";
-        exit(1);
-    }
-
     switch (mode)
     {
         case PRODUCER:
+        {
+            auto client = create_kclient(params);
             producer(client, params);
             break;
+        }
         case CONUSMER:
+        {
+            auto client = create_kclient(params);
             consumer(client, params);
             break;
+        }
         case ZEROMQ_SERVER:
             zmq_server();
             break;

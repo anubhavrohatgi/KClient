@@ -13,5 +13,8 @@ ZmqClient::ZmqClient(const std::string &ip)
 
 void ZmqClient::send(const std::string &msg)
 {
+    zmq::message_t req;
     c_socket.send(msg.c_str(), msg.size());
+    c_socket.recv(&req);
 }
+
