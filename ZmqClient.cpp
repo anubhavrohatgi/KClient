@@ -6,8 +6,8 @@
 #include "zhelpers.hpp"
 
 ZmqClient::ZmqClient()
-        : ctx{2}
-        , c_socket{ctx, ZMQ_PUB}
+    : ctx{1}
+    , c_socket{ctx, ZMQ_PUB}
 {
     c_socket.bind("tcp://*:5560");
 }

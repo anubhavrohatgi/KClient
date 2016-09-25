@@ -17,10 +17,8 @@ public:
     void send(const std::string& msg);
     void close();
 
-    ~ZmqClient()
-    {
-        zmq_close(c_socket);
-    }
+    ~ZmqClient() { close(); }
+
 private:
     zmq::context_t ctx;
     zmq::socket_t c_socket;
