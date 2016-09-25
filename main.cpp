@@ -53,10 +53,10 @@ void produce_file(const std::string& fname, std::ofstream& fout)
 void produce_file(const std::string& fname, ZmqClient& pub)
 {
     std::ifstream f{fname};
-    std::string line;
 
-    while (f)
+    while (!f.eof())
     {
+        std::string line{};
         std::getline(f, line);
         pub.send(line);
     }
@@ -171,7 +171,9 @@ void zmq_client()
         produce_file(fname, zmqClient);
         std::cout << "done: " << fname << "\n";
     }
-    zmqClient.send("exit");
+    zmqClient.send("###EXIT###");
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    zmqClient.close();
 }
 
 

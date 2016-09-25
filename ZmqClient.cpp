@@ -6,11 +6,18 @@
 #include "zhelpers.hpp"
 
 ZmqClient::ZmqClient()
-        : ctx{1}
+        : ctx{2}
         , c_socket{ctx, ZMQ_PUB}
 {
     c_socket.bind("tcp://*:5560");
 }
+
+
+void ZmqClient::close()
+{
+    c_socket.close();
+}
+
 
 void ZmqClient::send(const std::string &msg)
 {

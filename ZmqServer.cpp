@@ -5,6 +5,14 @@
 #include "ZmqServer.h"
 #include "zhelpers.hpp"
 
+ZmqServer::ZmqServer()
+        : ctx{2}
+        , subscriber{ctx, ZMQ_SUB}
+{
+    subscriber.connect(c_endpoint);
+    subscriber.setsockopt(ZMQ_SUBSCRIBE, "METEO", 1);
+}
+
 
 void ZmqServer::run()
 {
@@ -15,11 +23,12 @@ void ZmqServer::run()
         s_recv(subscriber);
         const auto msg_str = s_recv(subscriber);
 
-        if(msg_str == "exit")
+        if(msg_str == "###EXIT###")
             break;
         else
             f << msg_str << "\n";
     }
-
+    f.flush();
     std::cout << "exit from main loop\n";
+    subscriber.close();
 }

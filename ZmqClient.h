@@ -15,6 +15,7 @@ public:
     ZmqClient();
 
     void send(const std::string& msg);
+    void close();
 
     ~ZmqClient()
     {

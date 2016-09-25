@@ -14,13 +14,7 @@
 class ZmqServer
 {
 public:
-    ZmqServer()
-    : ctx{1}
-    , subscriber{ctx, ZMQ_SUB}
-    {
-        subscriber.connect(c_endpoint);
-        subscriber.setsockopt(ZMQ_SUBSCRIBE, "METEO", 1);
-    }
+    ZmqServer();
 
     void run();
 
