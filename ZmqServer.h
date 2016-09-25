@@ -6,6 +6,9 @@
 #define TICKETKAFKA_ZMQSERVER_H
 
 #include <zmq.hpp>
+#include <thread>
+#include <fstream>
+#include "util.h"
 
 
 class ZmqServer
@@ -13,28 +16,31 @@ class ZmqServer
 public:
     ZmqServer()
     : ctx{3}
-    , s_socket{ctx, ZMQ_ROUTER}
-    , ipc_socket{ctx, ZMQ_DEALER}
+    , clients{ctx, ZMQ_ROUTER}
+    , workers{ctx, ZMQ_DEALER}
     {
-        s_socket.bind(r_endpoint);
+        clients.bind(c_endpoint);
+        workers.bind(w_endpoint);
     }
 
     void run()
     {
+        add_worker();
+        zmq::proxy(clients, workers, nullptr);
 
+        for (auto& th : v_th)
+            th.join();
     }
 
-    void worker()
-    {
-
-    }
+    void add_worker();
 
 private:
     zmq::context_t ctx;
-    zmq::socket_t s_socket;
-    zmq::socket_t ipc_socket;
-    std::string r_endpoint{"tcp://*:5559"};
-    std::string ipc_endpoint{"ipc://workerbus.ipc"};
+    zmq::socket_t clients;
+    zmq::socket_t workers;
+    std::string c_endpoint{"tcp://*:5559"};
+    std::string w_endpoint{"inproc://workerbus"};
+    std::vector<std::thread> v_th;
 };
 
 

@@ -27,7 +27,7 @@ hunter_add_package(Boost COMPONENTS system filesystem)
 find_package(GTest CONFIG REQUIRED) # GTest::main
 find_package(Boost CONFIG REQUIRED system filesystem)
 
-set(SOURCE_FILES main.cpp util.h kclient.cpp ZmqServer.cpp ZmqServer.h ZmqClient.cpp ZmqClient.h)
+set(SOURCE_FILES main.cpp util.h kclient.cpp ZmqServer.cpp ZmqServer.h ZmqClient.cpp ZmqClient.h util.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic-errors -O3 -std=c++14")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -pedantic-errors -O3 -std=c++14")
