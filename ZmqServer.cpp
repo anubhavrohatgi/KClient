@@ -17,6 +17,7 @@ ZmqServer::ZmqServer()
 void ZmqServer::run()
 {
     std::ofstream f{"out_pubsub.txt"};
+    size_t c{};
 
     while(true)
     {
@@ -27,8 +28,17 @@ void ZmqServer::run()
             break;
         else
             f << msg_str << "\n";
+
+        if (c == 10000)
+        {
+            c = 0;
+            f.flush();
+        }
+        c++;
     }
+
     f.flush();
+
     std::cout << "exit from main loop\n";
     subscriber.close();
 }

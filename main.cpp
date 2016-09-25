@@ -50,16 +50,20 @@ void produce_file(const std::string& fname, std::ofstream& fout)
 }
 
 
-void produce_file(const std::string& fname, ZmqClient& pub)
+size_t produce_file(const std::string& fname, ZmqClient& pub)
 {
     std::ifstream f{fname};
+    std::string line;
+    size_t c{};
 
-    while (!f.eof())
+    while(f)
     {
-        std::string line{};
         std::getline(f, line);
         pub.send(line);
+        c++;
     }
+
+    return c;
 }
 
 
@@ -163,17 +167,20 @@ void zmq_client()
 {
     using namespace boost::filesystem;
     ZmqClient zmqClient;
-
+    size_t c{};
     path p("/mnt/disk-master/DATA_TX");
     for (directory_entry& x : directory_iterator(p))
     {
         const auto fname = x.path().string();
-        produce_file(fname, zmqClient);
+        c += produce_file(fname, zmqClient);
         std::cout << "done: " << fname << "\n";
     }
+
     zmqClient.send("###EXIT###");
     std::this_thread::sleep_for(std::chrono::seconds(1));
     zmqClient.close();
+
+    std::cout << "Messages produces: " << c << "\n";
 }
 
 
