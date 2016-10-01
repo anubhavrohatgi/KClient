@@ -30,8 +30,6 @@ void ZmqServer::sync_loop()
 
 		s_send(syncservice, s);
 		s_recv(syncservice);
-
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 

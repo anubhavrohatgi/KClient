@@ -32,7 +32,7 @@ private:
 	zmq::socket_t syncservice;
 	bool m_stop;
 	std::string c_endpoint{"tcp://127.0.0.1:5560"};
-	std::atomic<size_t> received;
+	size_t received;
 };
 
 

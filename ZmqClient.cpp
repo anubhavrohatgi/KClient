@@ -28,11 +28,11 @@ void ZmqClient::sync_loop()
 		}
 
 		const auto c_str = s_recv(syncservice);
-		s_send(syncservice, "OK");
+		s_send(syncservice, "");
 
 		{
 			std::lock_guard<std::mutex> l(m);
-			clinet_rec = std::stoul(c_str);
+			client_rec = std::stoul(c_str);
 		}
 	}
 }
@@ -49,14 +49,18 @@ void ZmqClient::send(const std::string &msg)
 	while (true)
 	{
 		std::unique_lock<std::mutex> l(m);
-		const auto diff = sent - clinet_rec;
-		//std::cout << "d " << diff << "\n";
-		l.unlock();
+		if (client_rec == 0)
+		{
+			l.unlock();
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			break;
+		}
 
+		const auto diff = sent - client_rec;
 		if (diff < 10000)
 			break;
 
-		//std::cout << "diff = " << diff << "\n";
+		l.unlock();
 		std::this_thread::sleep_for(std::chrono::milliseconds(20));
 	}
 

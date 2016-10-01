@@ -176,9 +176,13 @@ void zmq_client()
 
 	for (directory_entry& x : directory_iterator(p))
 	{
+		time_t t_s, t_e;
 		const auto fname = x.path().string();
-		c += produce_file(fname, zmq_client);
-		std::cout << "done: " << fname << ", #nmsg = " << c << "\n";
+		time(&t_s);
+		const auto n = produce_file(fname, zmq_client);
+		time(&t_e);
+		c += n;
+		std::cout << "done: " << fname << ", #nmsg = " << c << " - " << (double)n / (double)(t_e - t_s) << " msg/s\n";
 	}
 
 	zmq_client.send("###EXIT###");

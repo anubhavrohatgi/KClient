@@ -33,7 +33,8 @@ public:
 private:
 	std::mutex m;
 	bool m_stop{false};
-	size_t sent{}, clinet_rec{};
+	time_t last_up{0};
+	size_t sent{}, last_sent{}, client_rec{};
 	zmq::context_t ctx;
 	zmq::socket_t c_socket;
 	zmq::socket_t syncservice;
