@@ -18,14 +18,33 @@ ZmqServer::ZmqServer()
 	syncservice.connect("tcp://127.0.0.1:5562");
 }
 
+void ZmqServer::sync_loop()
+{
+	while (true)
+	{
+		std::unique_lock<std::mutex> l(m);
+		if (m_stop)
+			break;
+		const std::string s = std::to_string(received);
+		l.unlock();
+
+		s_send(syncservice, s);
+		s_recv(syncservice);
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+}
+
 
 void ZmqServer::run()
 {
 	std::ofstream f{"out_pubsub.txt"};
-	size_t c{};
+	received = 0;
+	m_stop = false;
 
 	s_send(syncservice, "READY");
 	s_recv(syncservice);
+	std::thread th_sync{&ZmqServer::sync_loop, this};
 
 	while (true)
 	{
@@ -35,14 +54,16 @@ void ZmqServer::run()
 		if (msg_str == "###EXIT###")
 			break;
 
-		c++;
+		received++;
 	}
-	std::cout << "Exit from main loop (" << c << ")\n";
+	m_stop = true;
+	std::cout << "Exit from main loop (" << received << ")\n";
 
 	s_send(syncservice, "DONE");
 	s_recv(syncservice);
 
-	subscriber.close();
+	th_sync.join();
 
+	subscriber.close();
 	f.flush();
 }

@@ -8,6 +8,7 @@
 #include <zmq.hpp>
 #include <thread>
 #include <fstream>
+#include <atomic>
 #include "util.h"
 
 
@@ -17,6 +18,7 @@ public:
 	ZmqServer();
 
 	void run();
+	void sync_loop();
 
 	~ZmqServer()
 	{
@@ -24,10 +26,13 @@ public:
 	}
 
 private:
+	std::mutex m;
 	zmq::context_t ctx;
 	zmq::socket_t subscriber;
 	zmq::socket_t syncservice;
+	bool m_stop;
 	std::string c_endpoint{"tcp://127.0.0.1:5560"};
+	std::atomic<size_t> received;
 };
 
 

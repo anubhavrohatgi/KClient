@@ -58,12 +58,8 @@ size_t produce_file(const std::string& fname, ZmqClient& pub)
 
 	while(f)
 	{
-		std::getline(f, line);
+		std::getline(f, line, '\n');
 		pub.send(line);
-
-		if(c % 10000 == 0)
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
 		c++;
 	}
 
@@ -176,6 +172,7 @@ void zmq_client()
 	path p("/mnt/disk-master/DATA_TX");
 
 	zmq_client.wait_client();
+	std::thread th_sync{&ZmqClient::sync_loop, &zmq_client};
 
 	for (directory_entry& x : directory_iterator(p))
 	{
@@ -187,6 +184,8 @@ void zmq_client()
 	zmq_client.send("###EXIT###");
 	zmq_client.wait_client();
 
+	zmq_client.stop();
+	th_sync.join();
 	//std::this_thread::sleep_for(std::chrono::seconds(1));
 	zmq_client.close();
 
