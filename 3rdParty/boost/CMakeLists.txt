@@ -32,22 +32,22 @@ ExternalProject_Add(boost
 	--variant=release
 	-j8
 	INSTALL_COMMAND ""
-	#  INSTALL_COMMAND ${Boost_b2_Command} install 
-	#    --without-python
-	#    --without-mpi
-	#    --disable-icu
-	#    --prefix=${CMAKE_BINARY_DIR}/INSTALL
-	#    --threading=single,multi
-	#    --link=shared
-	#    --variant=release
-	#    -j8
-	INSTALL_DIR ${CMAKE_BINARY_DIR}/INSTALL
+	INSTALL_COMMAND ${Boost_b2_Command} install 
+	    --without-python
+	    --without-mpi
+	    --disable-icu
+	    --prefix=${CMAKE_BINARY_DIR}/INSTALL
+	    --threading=single,multi
+	    --link=shared
+	    --variant=release
+	    -j8
+	INSTALL_DIR ${CMAKE_BINARY_DIR}/INSTALL/lib
 )
 
 ExternalProject_Get_Property(boost INSTALL_DIR)
 
 if( NOT WIN32 )
-  set(Boost_LIBRARY_DIR ${CMAKE_BINARY_DIR}/INSTALL/lib/boost/ )
+  set(Boost_LIBRARY_DIR ${CMAKE_BINARY_DIR}/INSTALL/lib/ )
   set(Boost_INCLUDE_DIR ${CMAKE_BINARY_DIR}/INSTALL/include/ )
 else()
   set(Boost_LIBRARY_DIR ${CMAKE_BINARY_DIR}/INSTALL/lib/ )
