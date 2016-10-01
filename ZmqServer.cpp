@@ -8,11 +8,14 @@
 
 
 ZmqServer::ZmqServer()
-	: ctx{2}
+	: ctx{1}
 	, subscriber{ctx, ZMQ_SUB}
+	, syncservice{ctx, ZMQ_REQ}
 {
-	subscriber.setsockopt(ZMQ_SUBSCRIBE, "METEO", 1);
 	subscriber.connect(c_endpoint);
+	subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
+
+	syncservice.connect("tcp://127.0.0.1:5562");
 }
 
 
@@ -21,19 +24,25 @@ void ZmqServer::run()
 	std::ofstream f{"out_pubsub.txt"};
 	size_t c{};
 
+	s_send(syncservice, "READY");
+	s_recv(syncservice);
+
 	while (true)
 	{
-		s_recv(subscriber);
 		const auto msg_str = s_recv(subscriber);
 		f << msg_str << "\n";
-		c++;
 
-		if (c == 86376047)
+		if (msg_str == "###EXIT###")
 			break;
-	}
 
-	f.flush();
-	std::cout << "\n\nExit from main loop (" << c << ")\n";
+		c++;
+	}
+	std::cout << "Exit from main loop (" << c << ")\n";
+
+	s_send(syncservice, "DONE");
+	s_recv(syncservice);
 
 	subscriber.close();
+
+	f.flush();
 }

@@ -9,6 +9,7 @@
 #include <thread>
 #include <chrono>
 
+
 class ZmqClient
 {
 public:
@@ -17,12 +18,14 @@ public:
 	void send(const std::string& msg);
 	void close();
 
+	void wait_client();
+
 	~ZmqClient() { close(); }
 
 private:
 	zmq::context_t ctx;
 	zmq::socket_t c_socket;
-	std::string topic{"METEO"};
+	zmq::socket_t syncservice;
 };
 
 

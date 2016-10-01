@@ -60,6 +60,10 @@ size_t produce_file(const std::string& fname, ZmqClient& pub)
 	{
 		std::getline(f, line);
 		pub.send(line);
+
+		if(c % 10000 == 0)
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
 		c++;
 	}
 
@@ -166,19 +170,25 @@ void zmq_server()
 void zmq_client()
 {
 	using namespace boost::filesystem;
-	ZmqClient zmqClient;
+
 	size_t c{};
+	ZmqClient zmq_client;
 	path p("/mnt/disk-master/DATA_TX");
+
+	zmq_client.wait_client();
+
 	for (directory_entry& x : directory_iterator(p))
 	{
 		const auto fname = x.path().string();
-		c += produce_file(fname, zmqClient);
-		std::cout << "done: " << fname << "\n";
+		c += produce_file(fname, zmq_client);
+		std::cout << "done: " << fname << ", #nmsg = " << c << "\n";
 	}
 
-	zmqClient.send("###EXIT###");
-	std::this_thread::sleep_for(std::chrono::seconds(1));
-	zmqClient.close();
+	zmq_client.send("###EXIT###");
+	zmq_client.wait_client();
+
+	//std::this_thread::sleep_for(std::chrono::seconds(1));
+	zmq_client.close();
 
 	std::cout << "Messages produces: " << c << "\n";
 }

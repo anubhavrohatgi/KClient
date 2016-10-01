@@ -26,6 +26,7 @@ public:
 private:
 	zmq::context_t ctx;
 	zmq::socket_t subscriber;
+	zmq::socket_t syncservice;
 	std::string c_endpoint{"tcp://127.0.0.1:5560"};
 };
 
