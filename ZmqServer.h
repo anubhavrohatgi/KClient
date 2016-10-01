@@ -14,19 +14,19 @@
 class ZmqServer
 {
 public:
-    ZmqServer();
+	ZmqServer();
 
-    void run();
+	void run();
 
-    ~ZmqServer()
-    {
-        zmq_close(subscriber);
-    }
+	~ZmqServer()
+	{
+		zmq_close(subscriber);
+	}
 
 private:
-    zmq::context_t ctx;
-    zmq::socket_t subscriber;
-    std::string c_endpoint{"tcp://127.0.0.1:5560"};
+	zmq::context_t ctx;
+	zmq::socket_t subscriber;
+	std::string c_endpoint{"tcp://127.0.0.1:5560"};
 };
 
 

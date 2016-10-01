@@ -11,7 +11,7 @@
 #include "kclient.h"
 #include "ZmqServer.h"
 #include "ZmqClient.h"
-#include <zmq.hpp>
+
 
 
 void produce_file(const std::string& fname, KProducer& producer, KTopic& topic)

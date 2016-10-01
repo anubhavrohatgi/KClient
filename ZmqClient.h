@@ -12,17 +12,17 @@
 class ZmqClient
 {
 public:
-    ZmqClient();
+	ZmqClient();
 
-    void send(const std::string& msg);
-    void close();
+	void send(const std::string& msg);
+	void close();
 
-    ~ZmqClient() { close(); }
+	~ZmqClient() { close(); }
 
 private:
-    zmq::context_t ctx;
-    zmq::socket_t c_socket;
-    std::string topic{"METEO"};
+	zmq::context_t ctx;
+	zmq::socket_t c_socket;
+	std::string topic{"METEO"};
 };
 
 
