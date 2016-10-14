@@ -38,31 +38,6 @@ KConsumer KClient::create_consumer()
 	return kconsumer;
 }
 
-
-bool KClient::loadMetadata(const std::string &topic_str)
-{
-	KProducer p = create_producer();
-	KTopic topic = p.create_topic(topic_str);
-
-	RdKafka::Metadata* metadata = topic.metadata(50000);
-	if (metadata == nullptr)
-		return false;
-
-	for (const RdKafka::TopicMetadata* tm : *metadata->topics())
-	{
-		std::cout << "found topic: " << tm->topic() << "\n";
-		auto& p_set = map_partions[tm->topic()];
-		for (const RdKafka::PartitionMetadata* pm : *tm->partitions())
-		{
-			p_set.insert(pm->id());
-			std::cout << "p: " << pm->id() << "\n";
-		}
-	}
-
-	return true;
-}
-
-
 KProducer KClient::create_producer()
 {
 	std::string errstr;
@@ -195,4 +170,30 @@ void KRebalanceCb::rebalance_cb(RdKafka::KafkaConsumer *consumer, RdKafka::Error
 		partition_cnt = 0;
 	}
 	eof_partition = 0;
+
+	std::cerr << "partition_cnt: " << partition_cnt << ", eof_partition = " << eof_partition << std::endl;
+}
+
+
+bool KClient::loadMetadata(const std::string &topic_str)
+{
+	KProducer p = create_producer();
+	KTopic topic = p.create_topic(topic_str);
+
+	RdKafka::Metadata* metadata = topic.metadata(50000);
+	if (metadata == nullptr)
+		return false;
+
+	for (const RdKafka::TopicMetadata* tm : *metadata->topics())
+	{
+		std::cout << "found topic: " << tm->topic() << "\n";
+		auto& p_set = map_partions[tm->topic()];
+		for (const RdKafka::PartitionMetadata* pm : *tm->partitions())
+		{
+			p_set.insert(pm->id());
+			std::cout << "p: " << pm->id() << "\n";
+		}
+	}
+
+	return true;
 }
