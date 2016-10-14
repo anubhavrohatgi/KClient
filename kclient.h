@@ -34,6 +34,31 @@ private:
 };
 
 
+class KRebalanceCb : public RdKafka::RebalanceCb
+{
+public:
+	void rebalance_cb (RdKafka::KafkaConsumer *consumer,
+					   RdKafka::ErrorCode err,
+					   std::vector<RdKafka::TopicPartition*> &partitions);
+
+	size_t get_partition_cnt() const { return partition_cnt; }
+	size_t get_eof_partition() const { return eof_partition; }
+
+	void inc_eof_partion() { eof_partition++; }
+private:
+	void part_list_print (const std::vector<RdKafka::TopicPartition*>&partitions)
+	{
+		for (unsigned int i = 0 ; i < partitions.size() ; i++)
+			std::cerr << partitions[i]->topic() <<
+					  "[" << partitions[i]->partition() << "], ";
+		std::cerr << "\n";
+	}
+
+	size_t partition_cnt{};
+	size_t eof_partition{};
+};
+
+
 class KTopic
 {
 public:
@@ -189,9 +214,9 @@ public:
 
 	~KConsumer() { delete _consumer; }
 
-	void setPartionsInfo(const std::map<std::string, std::set<int32_t>>* map_part)
+	void setRebalanceCb(KRebalanceCb* rebalance)
 	{
-		map_partions = map_part;
+		rebalance_cb = rebalance;
 	}
 
 	void close();
@@ -199,7 +224,7 @@ public:
 private:
 	RdKafka::KafkaConsumer *_consumer{nullptr};
 	RdKafka::Conf *topic_conf{nullptr};
-	const std::map<std::string, std::set<int32_t>>* map_partions{nullptr};
+	KRebalanceCb* rebalance_cb;
 };
 
 
@@ -228,6 +253,7 @@ public:
 		setGlobalConf("metadata.broker.list", brokers);
 
 		setConf(conf, "event_cb", &event_cb);
+		setConf(conf, "rebalance_cb", &rebalance_cb);
 
 		default_topic_conf();
 	}
@@ -272,7 +298,8 @@ protected:
 		return true;
 	}
 
-	bool setConf(RdKafka::Conf * p_conf, const std::string& param, RdKafka::EventCb* val)
+	template <typename T>
+	bool setConf(RdKafka::Conf * p_conf, const std::string& param, T* val)
 	{
 		if (!p_conf)
 			return false;
@@ -289,6 +316,8 @@ protected:
 
 private:
 	KEventCb event_cb;
+	KRebalanceCb rebalance_cb;
+
 	RdKafka::Conf *conf;
 	RdKafka::Conf *topic_conf;
 	std::string brokers;

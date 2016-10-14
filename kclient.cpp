@@ -34,7 +34,7 @@ KConsumer KClient::create_consumer()
 
 	KConsumer kconsumer{consumer};
 	kconsumer.setTopicConf(topic_conf);
-	kconsumer.setPartionsInfo(&map_partions);
+	kconsumer.setRebalanceCb(&rebalance_cb);
 	return kconsumer;
 }
 
@@ -107,7 +107,7 @@ void KClient::default_topic_conf()
 
 
 template <typename T>
-KTopic create_topic(const std::string &topic_str, T* h, RdKafka::Conf* topic_conf, const std::map<std::string, std::set<int32_t>>* map_partions)
+KTopic create_topic(const std::string &topic_str, T* h, RdKafka::Conf* topic_conf)
 {
 	std::string errstr;
 	RdKafka::Topic* topic{nullptr};
@@ -121,20 +121,17 @@ KTopic create_topic(const std::string &topic_str, T* h, RdKafka::Conf* topic_con
 	}
 
 	KTopic ktopic{topic_str, topic, h};
-	if (map_partions != nullptr)
-		ktopic.setPartionsInfo(map_partions->at(topic_str));
-
 	return ktopic;
 }
 
 KTopic KProducer::create_topic(const std::string &topic_str)
 {
-	return ::create_topic(topic_str, _producer, topic_conf, map_partions);
+	return ::create_topic(topic_str, _producer, topic_conf);
 }
 
 KTopic KConsumer::create_topic(const std::string &topic_str)
 {
-	return ::create_topic(topic_str, _consumer, topic_conf, map_partions);
+	return ::create_topic(topic_str, _consumer, topic_conf);
 }
 
 
@@ -177,4 +174,25 @@ void KEventCb::event_cb(RdKafka::Event &event)
 					  event.str() << std::endl;
 			break;
 	}
+}
+
+
+void KRebalanceCb::rebalance_cb(RdKafka::KafkaConsumer *consumer, RdKafka::ErrorCode err,
+								std::vector<RdKafka::TopicPartition *> &partitions)
+{
+	std::cerr << "RebalanceCb: " << RdKafka::err2str(err) << ": ";
+
+	part_list_print(partitions);
+
+	if (err == RdKafka::ERR__ASSIGN_PARTITIONS)
+	{
+		consumer->assign(partitions);
+		partition_cnt = partitions.size();
+	}
+	else
+	{
+		consumer->unassign();
+		partition_cnt = 0;
+	}
+	eof_partition = 0;
 }

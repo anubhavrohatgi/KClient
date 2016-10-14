@@ -88,7 +88,7 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
 			part = std::stoi(params.at("partition"));
 
 		//
-		path p("/mnt/disk-master/DATA_TX");
+		path p(params.at("data_in"));
 		for (directory_entry& x : directory_iterator(p))
 		{
 			const auto fname = x.path().string();
@@ -139,8 +139,12 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 				std::flush(std::cout);
 			}
 		}, [](const RdKafka::Message& message, const RdKafka::ErrorCode err_code){
-			std::cerr << "Error consuming message!\n";
-			return err_code == RdKafka::ERR__PARTITION_EOF;
+			if (err_code != RdKafka::ERR__PARTITION_EOF)
+			{
+				std::cerr << "Error consuming message!\n";
+				return false;
+			}
+			return true;
 		});
 
 		std::cout << "\nEnd: " << msg_cnt << "\n";
@@ -275,6 +279,11 @@ int main(int argc, char* argv[])
 			params["partition"] = argv[i+1];;
 			i++;
 		}
+		else if(strcmp(argv[i], "--data-in") == 0)
+		{
+			params["data_in"] = argv[i+1];;
+			i++;
+		}
 	}
 
 	if (params["brokers"].empty())
@@ -286,6 +295,8 @@ int main(int argc, char* argv[])
 	if (params["client.id"].empty())
 		params["client.id"] = hostname;
 
+	if (params["data_in"].empty())
+		params["data_in"] = "/mnt/disk-master/DATA_TX";
 
 	mode_t mode;
 	if (params["mode"] == "producer")
