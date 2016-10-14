@@ -119,13 +119,13 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 		KConsumer consumer = client.create_consumer();
 		std::cout << "> Created consumer " << consumer.name() << std::endl;
 
+		consumer.subscribe({params.at("topic")});
 		std::vector<double> temp_avg;
-		KQueue queue = consumer.create_queue(params.at("topic"));
 
-		queue.for_each(500, [&temp_avg](const RdKafka::Message& message){
-			std::cout << "Read msg at offset " << message.offset() << "\n";
-			if (message.key())
-				std::cout << "Key: " << *message.key() << "\n";
+		consumer.for_each(500, [&temp_avg](const RdKafka::Message* message){
+			std::cout << "Read msg at offset " << message->offset() << "\n";
+			if (message->key())
+				std::cout << "Key: " << *message->key() << "\n";
 
 			/*std::stringstream smsg;
 			smsg << static_cast<const char *>(message.payload());
@@ -135,11 +135,8 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 			std::cout << temp << "\n";
 			temp_avg.push_back(temp);*/
 
-			std::cout << message.payload() << std::endl;
-
-		}, [](const RdKafka::Message& message){
-			std::cerr << "Error reading message or EOF\n";
-		}, exit_end);
+			std::cout << message->payload() << std::endl;
+		});
 
 		double sum = std::accumulate(temp_avg.begin(), temp_avg.end(), 0.0, [](double a, double b){
 		   return a+b;

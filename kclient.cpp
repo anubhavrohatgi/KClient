@@ -198,7 +198,7 @@ KQueue KConsumer::create_queue(const std::vector<std::string>& topics)
 	KQueue q{RdKafka::Queue::create(_consumer)};
 
 	q.setConsumer(_consumer);
-	_consumer->subscribe(topics);
+	subscribe(topics);
 	return q;
 }
 

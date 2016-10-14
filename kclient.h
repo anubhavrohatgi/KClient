@@ -150,6 +150,29 @@ public:
 	KQueue create_queue(const std::string& topic);
 	KQueue create_queue(const std::vector<std::string>& topics);
 
+	void subscribe(const std::vector<std::string>& topics)
+	{
+		_consumer->subscribe(topics);
+	}
+
+	RdKafka::Message* consume(size_t time_out)
+	{
+		return _consumer->consume(time_out);
+	}
+
+	template <typename F>
+	void for_each(size_t time_out, F && f)
+	{
+		while(true)
+		{
+			RdKafka::Message* msg = consume(time_out);
+			if (msg == nullptr)
+				break;
+
+			f(msg);
+		}
+	}
+
 	std::string name() const { return _consumer->name(); }
 
 	int poll(int timeout_ms) { return _consumer->poll(timeout_ms); }
