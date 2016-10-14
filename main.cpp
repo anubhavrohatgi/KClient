@@ -8,6 +8,7 @@
 #include <mutex>
 #include <fstream>
 #include <sstream>
+#include <sys/time.h>
 #include "kclient.h"
 #include "ZmqServer.h"
 #include "ZmqClient.h"
@@ -106,6 +107,8 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 {
 	if (params.find("group.id") != params.end())
 		client.setGlobalConf("group.id", params.at("group.id"));
+
+
 
 	bool exit_end{false};
 	if (params.find("exit_end") != params.end() && params.at("exit_end") == "true")
@@ -223,6 +226,7 @@ KClient create_kclient(std::map<std::string, std::string>& params)
 
 	return client;
 }
+
 
 
 int main(int argc, char* argv[])

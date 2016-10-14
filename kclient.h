@@ -19,230 +19,296 @@
 
 class SimplePartionerCb : public RdKafka::PartitionerCb {
 public:
-    using p_fun_t = std::function<int32_t(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque)>;
-    int32_t partitioner_cb (const RdKafka::Topic *topic, const std::string *key,
-                            int32_t partition_cnt, void *msg_opaque) override {
-        return p_fun(topic, key, partition_cnt, msg_opaque);
-    }
+	using p_fun_t = std::function<int32_t(const RdKafka::Topic *topic, const std::string *key, int32_t partition_cnt, void *msg_opaque)>;
+	int32_t partitioner_cb (const RdKafka::Topic *topic, const std::string *key,
+							int32_t partition_cnt, void *msg_opaque) override {
+		return p_fun(topic, key, partition_cnt, msg_opaque);
+	}
 
-    void setCallBack(p_fun_t f)
-    {
-        p_fun = move(f);
-    }
+	void setCallBack(p_fun_t f)
+	{
+		p_fun = move(f);
+	}
 private:
-    p_fun_t p_fun;
+	p_fun_t p_fun;
 };
 
 
 class EnvConsumeCb
 {
 public:
-    using p_fun_t = std::function<void(const RdKafka::Message &message)>;
+	using p_fun_t = std::function<void(const RdKafka::Message &message)>;
 
-    EnvConsumeCb(p_fun_t f_msg_cb, p_fun_t f_err_cb)
-            : _f_msg_callback{f_msg_cb}
-            , _f_err_callback{f_err_cb}
-    {}
+	EnvConsumeCb(p_fun_t f_msg_cb, p_fun_t f_err_cb)
+			: _f_msg_callback{f_msg_cb}
+			, _f_err_callback{f_err_cb}
+	{}
 
-    void consume_cb(const RdKafka::Message& message, void *opaque);
+	void consume_cb(const RdKafka::Message& message, void *opaque);
 
 private:
-    p_fun_t _f_msg_callback;
-    p_fun_t _f_err_callback;
+	p_fun_t _f_msg_callback;
+	p_fun_t _f_err_callback;
 };
 
 
 class KQueue
 {
 public:
-    KQueue(RdKafka::Queue* p_queue) : queue{p_queue}
-    {}
-    void for_each(int timeout_ms,
-                          std::function<void(const RdKafka::Message &)> msg_callback,
-                          std::function<void(const RdKafka::Message &)> error_callback, bool exit_end);
+	KQueue(RdKafka::Queue* p_queue) : queue{p_queue}
+	{}
+	void for_each(int timeout_ms,
+						  std::function<void(const RdKafka::Message &)> msg_callback,
+						  std::function<void(const RdKafka::Message &)> error_callback, bool exit_end);
 
-    void setConsumer(RdKafka::KafkaConsumer* c) { _consumer = c; }
+	void setConsumer(RdKafka::KafkaConsumer* c) { _consumer = c; }
 private:
-    RdKafka::Queue* queue{nullptr};
-    RdKafka::Producer* _producer{nullptr};
-    RdKafka::KafkaConsumer* _consumer{nullptr};
+	RdKafka::Queue* queue{nullptr};
+	RdKafka::Producer* _producer{nullptr};
+	RdKafka::KafkaConsumer* _consumer{nullptr};
 };
 
 
 class KTopic
 {
 public:
-    KTopic(std::string topic_name, RdKafka::Topic *topic, RdKafka::Producer *producer) :
-            _topic_name{std::move(topic_name)}, _topic{topic}, _producer{producer}
-    {}
+	KTopic(std::string topic_name, RdKafka::Topic *topic, RdKafka::Producer *producer) :
+			_topic_name{std::move(topic_name)}, _topic{topic}, _producer{producer}
+	{}
 
-    KTopic(std::string topic_name, RdKafka::Topic* topic, RdKafka::KafkaConsumer* consumer) :
-            _topic_name{std::move(topic_name)}, _topic{topic}, _consumer{consumer}
-    {}
+	KTopic(std::string topic_name, RdKafka::Topic* topic, RdKafka::KafkaConsumer* consumer) :
+			_topic_name{std::move(topic_name)}, _topic{topic}, _consumer{consumer}
+	{}
 
-    RdKafka::ErrorCode produce(const std::string& msg, int32_t partition)
-    {
-        return _producer->produce(_topic, partition,
-                                  RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
-                                  const_cast<char *>(msg.c_str()), msg.size(),
-                                  NULL, NULL);
-    }
+	RdKafka::ErrorCode produce(const std::string& msg, int32_t partition)
+	{
+		return _producer->produce(_topic, partition,
+								  RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
+								  const_cast<char *>(msg.c_str()), msg.size(),
+								  NULL, NULL);
+	}
 
-    RdKafka::ErrorCode produce(std::string msg)
-    {
-        return produce(msg, RdKafka::Topic::PARTITION_UA);
-    }
+	RdKafka::ErrorCode produce(std::string msg)
+	{
+		return produce(msg, RdKafka::Topic::PARTITION_UA);
+	}
 
-    RdKafka::Metadata* metadata(int timeout_ms);
+	RdKafka::Metadata* metadata(int timeout_ms);
 
-    ~KTopic() { delete _topic; }
+	~KTopic() { delete _topic; }
 
-    void setPartionsInfo(const std::set<int32_t> &partions) { _partions = partions; }
-    size_t getNumPartions() const { return _partions.size(); }
-    const std::set<int32_t>& getPartions() const { return _partions; }
+	void setPartionsInfo(const std::set<int32_t> &partions) { _partions = partions; }
+	size_t getNumPartions() const { return _partions.size(); }
+	const std::set<int32_t>& getPartions() const { return _partions; }
 
 private:
-    std::string _topic_name{};
-    RdKafka::Topic* _topic{nullptr};
-    RdKafka::Producer* _producer{nullptr};
-    RdKafka::KafkaConsumer* _consumer{nullptr};
-    std::set<int32_t> _partions;
+	std::string _topic_name{};
+	RdKafka::Topic* _topic{nullptr};
+	RdKafka::Producer* _producer{nullptr};
+	RdKafka::KafkaConsumer* _consumer{nullptr};
+	std::set<int32_t> _partions;
 };
 
 
 class KProducer
 {
 public:
-    KProducer(RdKafka::Producer *producer) : _producer{producer}
-    {}
+	KProducer(RdKafka::Producer *producer) : _producer{producer}
+	{}
 
-    KTopic create_topic(const std::string& topic_str);
+	KTopic create_topic(const std::string& topic_str);
 
-    std::string name() const { return _producer->name(); }
-    void setTopicConf(RdKafka::Conf *pConf) { topic_conf = pConf; }
-    int outq_len() const { return _producer->outq_len(); }
-    int poll(int timeout) const { return _producer->poll(timeout); }
+	std::string name() const { return _producer->name(); }
+	void setTopicConf(RdKafka::Conf *pConf) { topic_conf = pConf; }
+	int outq_len() const { return _producer->outq_len(); }
+	int poll(int timeout) const { return _producer->poll(timeout); }
 
-    void setPartionsInfo(const std::map<std::string, std::set<int32_t>>* map_part)
-    {
-        map_partions = map_part;
-    }
+	void setPartionsInfo(const std::map<std::string, std::set<int32_t>>* map_part)
+	{
+		map_partions = map_part;
+	}
 
-    ~KProducer() {
-        delete _producer;
-    }
+	~KProducer() {
+		delete _producer;
+	}
 
 private:
-    RdKafka::Producer* _producer{nullptr};
-    RdKafka::Conf* topic_conf{nullptr};
-    const std::map<std::string, std::set<int32_t>>* map_partions{nullptr};
+	RdKafka::Producer* _producer{nullptr};
+	RdKafka::Conf* topic_conf{nullptr};
+	const std::map<std::string, std::set<int32_t>>* map_partions{nullptr};
 };
 
 
 class KConsumer
 {
 public:
-    KConsumer(RdKafka::KafkaConsumer *consumer) : _consumer{consumer}
-    {}
+	KConsumer(RdKafka::KafkaConsumer *consumer) : _consumer{consumer}
+	{
+	}
 
-    void setTopicConf(RdKafka::Conf *pConf) { topic_conf = pConf; }
-    KTopic create_topic(const std::string& topic_str);
-    KQueue create_queue(const std::string& topic);
-    KQueue create_queue(const std::vector<std::string>& topics);
+	void setTopicConf(RdKafka::Conf *pConf) { topic_conf = pConf; }
+	KTopic create_topic(const std::string& topic_str);
+	KQueue create_queue(const std::string& topic);
+	KQueue create_queue(const std::vector<std::string>& topics);
 
-    std::string name() const { return _consumer->name(); }
+	std::string name() const { return _consumer->name(); }
 
-    int poll(int timeout_ms) { return _consumer->poll(timeout_ms); }
+	int poll(int timeout_ms) { return _consumer->poll(timeout_ms); }
 
-    ~KConsumer() { delete _consumer; }
+	~KConsumer() { delete _consumer; }
 
-    void setPartionsInfo(const std::map<std::string, std::set<int32_t>>* map_part)
-    {
-        map_partions = map_part;
-    }
+	void setPartionsInfo(const std::map<std::string, std::set<int32_t>>* map_part)
+	{
+		map_partions = map_part;
+	}
 
-    void close();
+	void close();
 
 private:
-    RdKafka::KafkaConsumer *_consumer{nullptr};
-    RdKafka::Conf *topic_conf{nullptr};
-    const std::map<std::string, std::set<int32_t>>* map_partions{nullptr};
+	RdKafka::KafkaConsumer *_consumer{nullptr};
+	RdKafka::Conf *topic_conf{nullptr};
+	const std::map<std::string, std::set<int32_t>>* map_partions{nullptr};
+};
+
+
+
+class KEventCb : public RdKafka::EventCb
+{
+public:
+	void event_cb (RdKafka::Event &event)
+	{
+		kutil::print_time();
+
+		switch (event.type())
+		{
+			case RdKafka::Event::EVENT_ERROR:
+				std::cerr << "ERROR (" << RdKafka::err2str(event.err()) << "): " <<
+						  event.str() << std::endl;
+				if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN)
+					run = false;
+				break;
+
+			case RdKafka::Event::EVENT_STATS:
+				std::cerr << "\"STATS\": " << event.str() << std::endl;
+				break;
+
+			case RdKafka::Event::EVENT_LOG:
+				fprintf(stderr, "LOG-%i-%s: %s\n",
+						event.severity(), event.fac().c_str(), event.str().c_str());
+				break;
+
+			case RdKafka::Event::EVENT_THROTTLE:
+				std::cerr << "THROTTLED: " << event.throttle_time() << "ms by " <<
+						  event.broker_name() << " id " << (int)event.broker_id() << std::endl;
+				break;
+
+			default:
+				std::cerr << "EVENT " << event.type() <<
+						  " (" << RdKafka::err2str(event.err()) << "): " <<
+						  event.str() << std::endl;
+				break;
+		}
+	}
+
+	bool run{true};
 };
 
 
 class KClient
 {
 public:
-    KClient()
-    {
-        conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
-        topic_conf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
-    }
+	KClient()
+	{
+		conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
+		topic_conf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
+	}
 
-    KClient(std::string i_brokers)
-            : KClient()
-    {
-        brokers = std::move(i_brokers);
-        setGlobalConf("bootstrap.servers", brokers);
-        setGlobalConf("metadata.broker.list", brokers);
+	KClient(std::string i_brokers)
+	: KClient()
+	{
+		brokers = std::move(i_brokers);
+		setGlobalConf("bootstrap.servers", brokers);
+		setGlobalConf("metadata.broker.list", brokers);
 
-        default_topic_conf();
-    }
+		setConf(conf, "event_cb", &event_cb);
 
-    bool setGlobalConf(const std::string& param, const std::string& val)
-    {
-        return setConf(conf, param, val);
-    }
+		default_topic_conf();
+	}
 
-    bool setTopicConf(const std::string& param, const std::string& val)
-    {
-        return setConf(topic_conf, param, val);
-    }
+	bool setGlobalConf(const std::string& param, const std::string& val)
+	{
+		return setConf(conf, param, val);
+	}
 
-    bool setPartioner(RdKafka::PartitionerCb& partioner);
-    bool setPartioner(SimplePartionerCb::p_fun_t fun)
-    {
-        partioner.setCallBack(fun);
-        return setPartioner(partioner);
-    }
+	bool setTopicConf(const std::string& param, const std::string& val)
+	{
+		return setConf(topic_conf, param, val);
+	}
 
-    KProducer create_producer();
+	bool setPartioner(RdKafka::PartitionerCb& partioner);
+	bool setPartioner(SimplePartionerCb::p_fun_t fun)
+	{
+		partioner.setCallBack(fun);
+		return setPartioner(partioner);
+	}
 
-    KConsumer create_consumer();
-    bool loadMetadata(const std::string& topic_str = "");
+	KProducer create_producer();
 
-    void default_topic_conf()
-    {
-        std::string errstr;
-        RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
-        setConf(tconf, "auto.offset.reset", "earliest");
+	KConsumer create_consumer();
+	bool loadMetadata(const std::string& topic_str = "");
 
-        conf->set("default_topic_conf", tconf, errstr);
-        std::cout << errstr << std::endl;
-    }
+	void default_topic_conf()
+	{
+		std::string errstr;
+		RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
+		setConf(tconf, "auto.offset.reset", "earliest");
+
+		/* Consumer groups always use broker based offset storage */
+		setConf(tconf, "offset.store.method", "broker");
+
+		conf->set("default_topic_conf", tconf, errstr);
+		std::cout << errstr << std::endl;
+	}
+
 protected:
-    bool setConf(RdKafka::Conf * p_conf, const std::string& param, const std::string& val)
-    {
-        if (!p_conf)
-            return false;
+	bool setConf(RdKafka::Conf * p_conf, const std::string& param, const std::string& val)
+	{
+		if (!p_conf)
+			return false;
 
-        std::string errstr;
-        if (p_conf->set(param, val, errstr) != RdKafka::Conf::CONF_OK)
-        {
-            std::cerr << errstr << std::endl;
-            return false;
-        }
+		std::string errstr;
+		if (p_conf->set(param, val, errstr) != RdKafka::Conf::CONF_OK)
+		{
+			std::cerr << errstr << std::endl;
+			return false;
+		}
 
-        return true;
-    }
+		return true;
+	}
+
+	bool setConf(RdKafka::Conf * p_conf, const std::string& param, RdKafka::EventCb* val)
+	{
+		if (!p_conf)
+			return false;
+
+		std::string errstr;
+		if (p_conf->set(param, val, errstr) != RdKafka::Conf::CONF_OK)
+		{
+			std::cerr << errstr << std::endl;
+			return false;
+		}
+
+		return true;
+	}
 
 private:
-    RdKafka::Conf *conf;
-    RdKafka::Conf *topic_conf;
-    std::string brokers;
+	KEventCb event_cb;
+	RdKafka::Conf *conf;
+	RdKafka::Conf *topic_conf;
+	std::string brokers;
 
-    std::map<std::string, std::set<int32_t>> map_partions;
-    SimplePartionerCb partioner;
+	std::map<std::string, std::set<int32_t>> map_partions;
+	SimplePartionerCb partioner;
 };
 
 #endif //TICKETKAFKA_KCLIENT_H
