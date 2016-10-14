@@ -191,7 +191,6 @@ void zmq_client()
 
 	zmq_client.stop();
 	th_sync.join();
-	//std::this_thread::sleep_for(std::chrono::seconds(1));
 	zmq_client.close();
 
 	std::cout << "Messages produces: " << c << "\n";

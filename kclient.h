@@ -44,7 +44,8 @@ public:
 	size_t get_partition_cnt() const { return partition_cnt; }
 	size_t get_eof_partition() const { return eof_partition; }
 
-	void inc_eof_partion() { eof_partition++; }
+	void inc_eof_partion() { eof_partition = (eof_partition+1) % partition_cnt; }
+	void reset_eof_partion() { eof_partition = 0; }
 private:
 	void part_list_print (const std::vector<RdKafka::TopicPartition*>&partitions)
 	{
@@ -183,13 +184,11 @@ public:
 				}
 				case RdKafka::ERR__PARTITION_EOF:
 				{
-					/* Last message */
-					if (err(*message.data, msg_err))
-					{
-						if (rebalance_cb->get_eof_partition() == rebalance_cb->get_partition_cnt())
-							return;
-						rebalance_cb->inc_eof_partion();
-					}
+					if (rebalance_cb->get_eof_partition() == rebalance_cb->get_partition_cnt()
+							&& err(*message.data, msg_err))
+						return;
+
+					rebalance_cb->inc_eof_partion();
 					break;
 				}
 

@@ -96,10 +96,10 @@ void KClient::default_topic_conf()
 {
 	std::string errstr;
 	RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
-	setConf(tconf, "auto.offset.reset", "earliest");
+	//setConf(tconf, "auto.offset.reset", "earliest");
 
 	/* Consumer groups always use broker based offset storage */
-	setConf(tconf, "offset.store.method", "broker");
+	//setConf(tconf, "offset.store.method", "broker");
 
 	conf->set("default_topic_conf", tconf, errstr);
 	std::cout << errstr << std::endl;
