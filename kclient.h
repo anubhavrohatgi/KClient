@@ -104,6 +104,14 @@ private:
 };
 
 
+struct message_raii{
+	RdKafka::Message* data{nullptr};
+	~message_raii()
+	{
+		delete data;
+	}
+};
+
 class KConsumer
 {
 public:
@@ -128,35 +136,49 @@ public:
 	{
 		while(true)
 		{
-			RdKafka::Message* msg = consume(time_out);
-			if (msg == nullptr)
+			message_raii message;
+			message.data = consume(time_out);
+
+			if (message.data == nullptr)
 				break;
 
-			switch (msg->err())
+			const auto msg_err = message.data->err();
+			switch (message.data->err())
 			{
 				case RdKafka::ERR__TIMED_OUT:
-					return;
-
-				case RdKafka::ERR_NO_ERROR:
-					/* Real message */
-					f(msg);
+				{
+					//std::cerr << "Timeout" << std::endl;
 					break;
-
+				}
+				case RdKafka::ERR_NO_ERROR:
+				{
+					/* Real message */
+					f(*message.data);
+					break;
+				}
 				case RdKafka::ERR__PARTITION_EOF:
+				{
 					/* Last message */
-					err(msg);
-					return;
+					if (err(*message.data, msg_err))
+						return;
+					break;
+				}
 
 				case RdKafka::ERR__UNKNOWN_TOPIC:
 				case RdKafka::ERR__UNKNOWN_PARTITION:
-					std::cerr << "Consume failed: " << msg->errstr() << std::endl;
-					err(msg);
-					return;
-
+				{
+					std::cerr << "Consume failed: " << message.data->errstr() << std::endl;
+					if (err(*message.data, msg_err))
+						return;
+					break;
+				}
 				default:
+				{
 					/* Errors */
-					std::cerr << "Consume failed: " << msg->errstr() << std::endl;
-					err(msg);
+					std::cerr << "Consume failed: " << message.data->errstr() << std::endl;
+					if (err(*message.data, msg_err))
+						return;
+				}
 			}
 		}
 	}
@@ -181,12 +203,10 @@ private:
 };
 
 
-
 class KEventCb : public RdKafka::EventCb
 {
 public:
 	void event_cb (RdKafka::Event &event);
-
 	bool run{true};
 };
 
@@ -234,18 +254,7 @@ public:
 	KConsumer create_consumer();
 	bool loadMetadata(const std::string& topic_str = "");
 
-	void default_topic_conf()
-	{
-		std::string errstr;
-		RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
-		setConf(tconf, "auto.offset.reset", "earliest");
-
-		/* Consumer groups always use broker based offset storage */
-		setConf(tconf, "offset.store.method", "broker");
-
-		conf->set("default_topic_conf", tconf, errstr);
-		std::cout << errstr << std::endl;
-	}
+	void default_topic_conf();
 
 protected:
 	bool setConf(RdKafka::Conf * p_conf, const std::string& param, const std::string& val)

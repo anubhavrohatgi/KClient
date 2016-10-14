@@ -14,10 +14,11 @@
 
 
 
-void produce_file(const std::string& fname, KProducer& producer, KTopic& topic)
+size_t produce_file(const std::string& fname, KProducer& producer, KTopic& topic, int32_t part)
 {
 	std::ifstream f{fname};
 
+	size_t n_msg{};
 	while (f)
 	{
 		std::string line;
@@ -25,7 +26,7 @@ void produce_file(const std::string& fname, KProducer& producer, KTopic& topic)
 
 		while(true)
 		{
-			RdKafka::ErrorCode resp = topic.produce(line, 0);
+			RdKafka::ErrorCode resp = topic.produce(line, part);
 			if (resp == RdKafka::ERR__QUEUE_FULL)
 				producer.poll(10);
 			else if (resp != RdKafka::ERR_NO_ERROR)
@@ -33,7 +34,10 @@ void produce_file(const std::string& fname, KProducer& producer, KTopic& topic)
 			else
 				break;
 		}
+		n_msg++;
 	}
+
+	return n_msg;
 }
 
 void produce_file(const std::string& fname, std::ofstream& fout)
@@ -72,19 +76,23 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
 	using namespace boost::filesystem;
 	try
 	{
-		std::ofstream f_out{"test_out.txt"};
+		size_t n_msg{};
+		int32_t part{};
+		//std::ofstream f_out{"test_out.txt"};
 		KProducer producer = client.create_producer();
 		std::cout << "> Created producer " << producer.name() << std::endl;
 
 		// Create topic handle.
 		KTopic topic = producer.create_topic(params.at("topic"));
+		if (params.find("partition") != params.end())
+			part = std::stoi(params.at("partition"));
 
 		//
 		path p("/mnt/disk-master/DATA_TX");
 		for (directory_entry& x : directory_iterator(p))
 		{
 			const auto fname = x.path().string();
-			produce_file(fname, producer, topic);
+			n_msg += produce_file(fname, producer, topic, part);
 			//produce_file(x.path().string(), f_out);
 			std::cout << "done: " << fname << "\n";
 		}
@@ -94,6 +102,8 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
 			std::cout << "Waiting for " << producer.outq_len() << std::endl;
 			producer.poll(100);
 		}
+
+		std::cout << "Tot message: " << n_msg << "\n";
 	}
 	catch (std::exception& ex)
 	{
@@ -114,12 +124,12 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 
 		consumer.subscribe({params.at("topic")});
 		size_t msg_cnt{};
-		consumer.for_each(1000, [&msg_cnt](const RdKafka::Message* message){
+		consumer.for_each(1000, [&msg_cnt](const RdKafka::Message& message){
 			//std::cout << "Read msg at offset " << message->offset() << "\n";
-			if (message->key())
-				std::cout << "Key: " << *message->key() << "\n";
+			if (message.key())
+				std::cout << "Key: " << message.key() << "\n";
 
-			if (message->payload() == nullptr)
+			if (message.payload() == nullptr)
 				return;
 			//std::cout << static_cast<const char *>(message->payload()) << "\n";
 			msg_cnt++;
@@ -128,8 +138,9 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 				std::cout << "*";
 				std::flush(std::cout);
 			}
-		}, [](const RdKafka::Message* message){
-			std::cerr << "Error consumeing message!\n";
+		}, [](const RdKafka::Message& message, const RdKafka::ErrorCode err_code){
+			std::cerr << "Error consuming message!\n";
+			return err_code == RdKafka::ERR__PARTITION_EOF;
 		});
 
 		std::cout << "\nEnd: " << msg_cnt << "\n";
@@ -190,10 +201,10 @@ KClient create_kclient(std::map<std::string, std::string>& params)
 	 * Set basic configuration
 	 */
 	KClient client(params["brokers"]);
-	if (!client.setGlobalConf("statistics.interval.ms", "5000"))
+	if (!client.setGlobalConf("statistics.interval.ms", "15000"))
 		exit(1);
 
-	if (!params["compression"].empty() && !client.setGlobalConf("compression.codec", "snappy"))
+	if (!params["compression"].empty() && !client.setGlobalConf("compression.codec", params.at("compression")))
 		exit(1);
 
 	if (!client.setGlobalConf("client.id", params["client.id"]))
@@ -258,6 +269,10 @@ int main(int argc, char* argv[])
 		else if(strcmp(argv[i], "-z") == 0)
 		{
 			params["compression"] = "snappy";
+		}
+		else if(strcmp(argv[i], "-p") == 0)
+		{
+			params["partition"] = argv[i+1];;
 			i++;
 		}
 	}
