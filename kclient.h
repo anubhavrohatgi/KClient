@@ -163,6 +163,11 @@ public:
 		return _consumer->consume(time_out);
 	}
 
+	void reset_eof_partion()
+	{
+		rebalance_cb->reset_eof_partion();
+	}
+
 	template<typename F, typename E>
 	void for_each(int time_out, F && f, E && err)
 	{
@@ -190,12 +195,12 @@ public:
 				}
 				case RdKafka::ERR__PARTITION_EOF:
 				{
+					rebalance_cb->inc_eof_partion();
 					rebalance_cb->print();
 					if (rebalance_cb->get_eof_partition() == rebalance_cb->get_partition_cnt()
-							&& err(*message.data, msg_err))
+							&& err(*message.data, msg_err)) {
 						return;
-
-					rebalance_cb->inc_eof_partion();
+					}
 					break;
 				}
 
@@ -232,8 +237,8 @@ public:
 	void close();
 
 private:
-	RdKafka::KafkaConsumer *_consumer{nullptr};
-	RdKafka::Conf *topic_conf{nullptr};
+	RdKafka::KafkaConsumer* _consumer{nullptr};
+	RdKafka::Conf* topic_conf{nullptr};
 	KRebalanceCb* rebalance_cb;
 };
 

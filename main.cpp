@@ -34,6 +34,7 @@ size_t produce_file(const std::string& fname, KProducer& producer, KTopic& topic
 			else
 				break;
 		}
+
 		n_msg++;
 	}
 
@@ -74,6 +75,8 @@ size_t produce_file(const std::string& fname, ZmqClient& pub)
 void producer(KClient& client, const std::map<std::string, std::string>& params)
 {
 	using namespace boost::filesystem;
+	client.setTopicConf("auto.commit.enable", "true");
+
 	try
 	{
 		size_t n_msg{};
@@ -117,6 +120,9 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 	if (params.find("group.id") != params.end())
 		client.setGlobalConf("group.id", params.at("group.id"));
 
+	client.setTopicConf("auto.commit.enable", "true");
+	client.setTopicConf("auto.offset.reset", "latest");
+
 	try
 	{
 		KConsumer consumer = client.create_consumer();
@@ -124,6 +130,9 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 
 		consumer.subscribe({params.at("topic")});
 		size_t msg_cnt{};
+
+		std::this_thread::sleep_for(std::chrono::seconds(10));
+
 		consumer.for_each(1000, [&msg_cnt](const RdKafka::Message& message){
 			//std::cout << "Read msg at offset " << message->offset() << "\n";
 			if (message.key())
@@ -138,12 +147,13 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 				std::cout << "*";
 				std::flush(std::cout);
 			}
-		}, [](const RdKafka::Message& message, const RdKafka::ErrorCode err_code){
+		}, [&consumer](const RdKafka::Message& message, const RdKafka::ErrorCode err_code){
 			if (err_code != RdKafka::ERR__PARTITION_EOF)
 			{
 				std::cerr << "Error consuming message!\n";
 				return false;
 			}
+			consumer.reset_eof_partion();
 			return true;
 		});
 
@@ -212,7 +222,6 @@ KClient create_kclient(std::map<std::string, std::string>& params)
 
 	if (!client.setGlobalConf("client.id", params["client.id"]))
 		exit(1);
-
 
 	// load metadata
 	if (!client.loadMetadata(params["topic"]))
