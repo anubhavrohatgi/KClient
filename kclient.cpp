@@ -170,8 +170,7 @@ void KRebalanceCb::rebalance_cb(RdKafka::KafkaConsumer *consumer, RdKafka::Error
 		partition_cnt = 0;
 	}
 	eof_partition = 0;
-
-	std::cerr << "partition_cnt: " << partition_cnt << ", eof_partition = " << eof_partition << std::endl;
+	print();
 }
 
 
