@@ -10,30 +10,6 @@
 #include "kclient.h"
 
 
-void KQueue::for_each(int timeout_ms,
-					std::function<void(const RdKafka::Message &)> msg_callback,
-					std::function<void(const RdKafka::Message &)> error_callback,
-					bool exit_end)
-{
-	EnvConsumeCb env_cb(msg_callback, error_callback);
-	while (true)
-	{
-		bool params[] = {true, false};
-		while (params[0])
-		{
-			RdKafka::Message* msg = _consumer->consume(timeout_ms);
-			env_cb.consume_cb(*msg, &params);
-			_consumer->poll(30);
-		}
-
-		if (exit_end || params[1])
-			break;
-
-		std::this_thread::sleep_for(std::chrono::duration<unsigned int, std::milli>(100));
-	}
-}
-
-
 RdKafka::Metadata* KTopic::metadata(int timeout_ms)
 {
 	RdKafka::Metadata* metadata;
@@ -48,46 +24,6 @@ RdKafka::Metadata* KTopic::metadata(int timeout_ms)
 
 	return metadata;
 }
-
-
-void EnvConsumeCb::consume_cb(const RdKafka::Message& message, void *opaque) {
-	bool *op = reinterpret_cast<bool*>(opaque);
-	bool *run = &op[0];
-	bool *end = &op[1];
-
-	switch (message.err())
-	{
-		case RdKafka::ERR__TIMED_OUT:
-			*run = false;
-			//*end = true;
-			return;
-
-		case RdKafka::ERR_NO_ERROR:
-			/* Real message */
-			_f_msg_callback(message);
-			break;
-
-		case RdKafka::ERR__PARTITION_EOF:
-			/* Last message */
-			_f_err_callback(message);
-			*run = false;
-			*end = true;
-			return;
-
-		case RdKafka::ERR__UNKNOWN_TOPIC:
-		case RdKafka::ERR__UNKNOWN_PARTITION:
-			std::cerr << "Consume failed: " << message.errstr() << std::endl;
-			*end = true;
-			return;
-
-		default:
-			/* Errors */
-			std::cerr << "Consume failed: " << message.errstr() << std::endl;
-			*run = false;
-			_f_err_callback(message);
-	}
-}
-
 
 KConsumer KClient::create_consumer()
 {
@@ -188,24 +124,12 @@ KTopic KConsumer::create_topic(const std::string &topic_str)
 	return ::create_topic(topic_str, _consumer, topic_conf, map_partions);
 }
 
-KQueue KConsumer::create_queue(const std::string& topic)
-{
-	return create_queue(std::vector<std::string>{topic});
-}
-
-KQueue KConsumer::create_queue(const std::vector<std::string>& topics)
-{
-	KQueue q{RdKafka::Queue::create(_consumer)};
-
-	q.setConsumer(_consumer);
-	subscribe(topics);
-	return q;
-}
 
 void KConsumer::close()
 {
 	_consumer->close();
 }
+
 
 void KEventCb::event_cb(RdKafka::Event &event)
 {

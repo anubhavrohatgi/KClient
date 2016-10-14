@@ -34,41 +34,6 @@ private:
 };
 
 
-class EnvConsumeCb
-{
-public:
-	using p_fun_t = std::function<void(const RdKafka::Message &message)>;
-
-	EnvConsumeCb(p_fun_t f_msg_cb, p_fun_t f_err_cb)
-			: _f_msg_callback{f_msg_cb}
-			, _f_err_callback{f_err_cb}
-	{}
-
-	void consume_cb(const RdKafka::Message& message, void *opaque);
-
-private:
-	p_fun_t _f_msg_callback;
-	p_fun_t _f_err_callback;
-};
-
-
-class KQueue
-{
-public:
-	KQueue(RdKafka::Queue* p_queue) : queue{p_queue}
-	{}
-	void for_each(int timeout_ms,
-						  std::function<void(const RdKafka::Message &)> msg_callback,
-						  std::function<void(const RdKafka::Message &)> error_callback, bool exit_end);
-
-	void setConsumer(RdKafka::KafkaConsumer* c) { _consumer = c; }
-private:
-	RdKafka::Queue* queue{nullptr};
-	RdKafka::Producer* _producer{nullptr};
-	RdKafka::KafkaConsumer* _consumer{nullptr};
-};
-
-
 class KTopic
 {
 public:
@@ -147,21 +112,19 @@ public:
 
 	void setTopicConf(RdKafka::Conf *pConf) { topic_conf = pConf; }
 	KTopic create_topic(const std::string& topic_str);
-	KQueue create_queue(const std::string& topic);
-	KQueue create_queue(const std::vector<std::string>& topics);
 
 	void subscribe(const std::vector<std::string>& topics)
 	{
 		_consumer->subscribe(topics);
 	}
 
-	RdKafka::Message* consume(size_t time_out)
+	RdKafka::Message* consume(int time_out)
 	{
 		return _consumer->consume(time_out);
 	}
 
-	template <typename F>
-	void for_each(size_t time_out, F && f)
+	template<typename F, typename E>
+	void for_each(int time_out, F && f, E && err)
 	{
 		while(true)
 		{
@@ -169,7 +132,32 @@ public:
 			if (msg == nullptr)
 				break;
 
-			f(msg);
+			switch (msg->err())
+			{
+				case RdKafka::ERR__TIMED_OUT:
+					return;
+
+				case RdKafka::ERR_NO_ERROR:
+					/* Real message */
+					f(msg);
+					break;
+
+				case RdKafka::ERR__PARTITION_EOF:
+					/* Last message */
+					err(msg);
+					return;
+
+				case RdKafka::ERR__UNKNOWN_TOPIC:
+				case RdKafka::ERR__UNKNOWN_PARTITION:
+					std::cerr << "Consume failed: " << msg->errstr() << std::endl;
+					err(msg);
+					return;
+
+				default:
+					/* Errors */
+					std::cerr << "Consume failed: " << msg->errstr() << std::endl;
+					err(msg);
+			}
 		}
 	}
 

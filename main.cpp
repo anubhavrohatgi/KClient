@@ -8,7 +8,6 @@
 #include <mutex>
 #include <fstream>
 #include <sstream>
-#include <sys/time.h>
 #include "kclient.h"
 #include "ZmqServer.h"
 #include "ZmqClient.h"
@@ -108,45 +107,32 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 	if (params.find("group.id") != params.end())
 		client.setGlobalConf("group.id", params.at("group.id"));
 
-
-
-	bool exit_end{false};
-	if (params.find("exit_end") != params.end() && params.at("exit_end") == "true")
-		exit_end = true;
-
 	try
 	{
 		KConsumer consumer = client.create_consumer();
 		std::cout << "> Created consumer " << consumer.name() << std::endl;
 
 		consumer.subscribe({params.at("topic")});
-		std::vector<double> temp_avg;
-
-		consumer.for_each(500, [&temp_avg](const RdKafka::Message* message){
-			std::cout << "Read msg at offset " << message->offset() << "\n";
+		size_t msg_cnt{};
+		consumer.for_each(1000, [&msg_cnt](const RdKafka::Message* message){
+			//std::cout << "Read msg at offset " << message->offset() << "\n";
 			if (message->key())
 				std::cout << "Key: " << *message->key() << "\n";
 
-			/*std::stringstream smsg;
-			smsg << static_cast<const char *>(message.payload());
-			std::string s;
-			double temp;
-			smsg >> s >> s >> temp;
-			std::cout << temp << "\n";
-			temp_avg.push_back(temp);*/
-
-			std::cout << message->payload() << std::endl;
+			if (message->payload() == nullptr)
+				return;
+			//std::cout << static_cast<const char *>(message->payload()) << "\n";
+			msg_cnt++;
+			if (msg_cnt % 1000 == 0)
+			{
+				std::cout << "*";
+				std::flush(std::cout);
+			}
+		}, [](const RdKafka::Message* message){
+			std::cerr << "Error consumeing message!\n";
 		});
 
-		double sum = std::accumulate(temp_avg.begin(), temp_avg.end(), 0.0, [](double a, double b){
-		   return a+b;
-		});
-
-		if (!temp_avg.empty())
-			std::cout << "size: " << temp_avg.size() << ", temp Avg: " << sum/(double)temp_avg.size() << "\n";
-		else
-			std::cout << "no data!\n";
-
+		std::cout << "\nEnd: " << msg_cnt << "\n";
 		consumer.close();
 	}
 	catch (std::exception& ex)
