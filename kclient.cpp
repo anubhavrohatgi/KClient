@@ -72,8 +72,8 @@ void KClient::default_topic_conf()
 	std::string errstr;
 	RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
 	setConf(tconf, "auto.commit.enable", "true");
-	//setConf(tconf, "auto.offset.reset", "earliest");
 
+	//setConf(tconf, "auto.offset.reset", "earliest");
 	/* Consumer groups always use broker based offset storage */
 	//setConf(tconf, "offset.store.method", "broker");
 
@@ -162,16 +162,6 @@ void KRebalanceCb::rebalance_cb(RdKafka::KafkaConsumer *consumer, RdKafka::Error
 
 	if (err == RdKafka::ERR__ASSIGN_PARTITIONS)
 	{
-		//std::vector<RdKafka::TopicPartition *> pos;
-		//consumer->position(pos);
-
-		/*std::vector<RdKafka::TopicPartition *> to_assign;
-		for (const auto& p : partitions)
-		{
-			//if (p->partition() ==)
-			std::cout << "pos " << p->offset() << std::endl;
-			p->set_offset(0);
-		}*/
 		consumer->assign(partitions);
 		partition_cnt = partitions.size();
 	}
