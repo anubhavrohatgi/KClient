@@ -143,8 +143,7 @@ class KConsumer
 {
 public:
 	KConsumer(RdKafka::KafkaConsumer *consumer) : _consumer{consumer}
-	{
-	}
+	{}
 
 	void setTopicConf(RdKafka::Conf *pConf) { topic_conf = pConf; }
 	KTopic create_topic(const std::string& topic_str);
@@ -175,40 +174,7 @@ private:
 class KEventCb : public RdKafka::EventCb
 {
 public:
-	void event_cb (RdKafka::Event &event)
-	{
-		kutil::print_time();
-
-		switch (event.type())
-		{
-			case RdKafka::Event::EVENT_ERROR:
-				std::cerr << "ERROR (" << RdKafka::err2str(event.err()) << "): " <<
-						  event.str() << std::endl;
-				if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN)
-					run = false;
-				break;
-
-			case RdKafka::Event::EVENT_STATS:
-				std::cerr << "\"STATS\": " << event.str() << std::endl;
-				break;
-
-			case RdKafka::Event::EVENT_LOG:
-				fprintf(stderr, "LOG-%i-%s: %s\n",
-						event.severity(), event.fac().c_str(), event.str().c_str());
-				break;
-
-			case RdKafka::Event::EVENT_THROTTLE:
-				std::cerr << "THROTTLED: " << event.throttle_time() << "ms by " <<
-						  event.broker_name() << " id " << (int)event.broker_id() << std::endl;
-				break;
-
-			default:
-				std::cerr << "EVENT " << event.type() <<
-						  " (" << RdKafka::err2str(event.err()) << "): " <<
-						  event.str() << std::endl;
-				break;
-		}
-	}
+	void event_cb (RdKafka::Event &event);
 
 	bool run{true};
 };
