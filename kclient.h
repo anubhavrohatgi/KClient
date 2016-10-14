@@ -185,7 +185,11 @@ public:
 				{
 					/* Last message */
 					if (err(*message.data, msg_err))
-						return;
+					{
+						if (rebalance_cb->get_eof_partition() == rebalance_cb->get_partition_cnt())
+							return;
+						rebalance_cb->inc_eof_partion();
+					}
 					break;
 				}
 
