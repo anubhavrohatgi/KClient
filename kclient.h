@@ -177,6 +177,7 @@ public:
 		return _consumer->consume(time_out);
 	}
 
+
 	void commit()
 	{
 		_consumer->commitSync();

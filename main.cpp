@@ -129,7 +129,7 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 				std::cout << "*";
 				std::flush(std::cout);
 			}
-		}, [&consumer, &params](const RdKafka::Message& message, const RdKafka::ErrorCode err_code){
+		}, [&consumer, &params, &msg_cnt](const RdKafka::Message& message, const RdKafka::ErrorCode err_code){
 			if (err_code != RdKafka::ERR__PARTITION_EOF)
 			{
 				std::cerr << "Error consuming message!\n";
@@ -137,10 +137,11 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 			}
 			consumer.reset_eof_partion();
 			consumer.commit();
+			std::cout << "\nEnd: " << msg_cnt << "\n";
+			msg_cnt = 0;
 			return params.find("exit") != params.end();
 		});
 
-		std::cout << "\nEnd: " << msg_cnt << "\n";
 		consumer.close();
 	}
 	catch (std::exception& ex)
