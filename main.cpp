@@ -34,7 +34,6 @@ size_t produce_file(const std::string& fname, KProducer& producer, KTopic& topic
 
 		n_msg++;
 	}
-
 	return n_msg;
 }
 
@@ -113,7 +112,10 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 		std::cout << "> Created consumer " << consumer.name() << std::endl;
 
 		consumer.subscribe({params.at("topic")});
+		consumer.wait_rebalance();
 		size_t msg_cnt{};
+
+		//std::this_thread::sleep_for(std::chrono::seconds(10));
 
 		consumer.for_each(1000, [&msg_cnt](const RdKafka::Message& message){
 			//std::cout << "Read msg at offset " << message->offset() << "\n";
@@ -136,6 +138,7 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 				return false;
 			}
 			consumer.reset_eof_partion();
+			consumer.commit();
 			return params.find("exit") != params.end();
 		});
 
@@ -155,7 +158,7 @@ KClient create_kclient(std::map<std::string, std::string>& params)
 	 * Set basic configuration
 	 */
 	KClient client(params["brokers"]);
-	if (!client.setGlobalConf("statistics.interval.ms", "15000"))
+	if (!client.setGlobalConf("statistics.interval.ms", "5000"))
 		exit(1);
 
 	if (!params["compression"].empty() && !client.setGlobalConf("compression.codec", params.at("compression")))

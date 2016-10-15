@@ -14,7 +14,7 @@
 #include <functional>
 #include <librdkafka/rdkafkacpp.h>
 #include <iostream>
-
+#include <future>
 
 
 class SimplePartionerCb : public RdKafka::PartitionerCb {
@@ -37,6 +37,13 @@ private:
 class KRebalanceCb : public RdKafka::RebalanceCb
 {
 public:
+	KRebalanceCb() = default;
+	KRebalanceCb(KRebalanceCb&& rhs)
+	: partition_cnt(rhs.partition_cnt)
+	, eof_partition(rhs.eof_partition)
+	, f_rebalance(rhs.f_rebalance)
+	{}
+
 	void rebalance_cb (RdKafka::KafkaConsumer *consumer,
 					   RdKafka::ErrorCode err,
 					   std::vector<RdKafka::TopicPartition*> &partitions);
@@ -52,6 +59,12 @@ public:
 		std::cerr << "partition_cnt: " << partition_cnt << ", eof_partition = " << eof_partition << std::endl;
 	}
 
+	bool is_rebalanced() const
+	{
+		std::lock_guard<std::mutex> l{m};
+		return f_rebalance;
+	}
+
 private:
 	void part_list_print (const std::vector<RdKafka::TopicPartition*>&partitions)
 	{
@@ -63,6 +76,9 @@ private:
 
 	size_t partition_cnt{};
 	size_t eof_partition{};
+
+	mutable std::mutex m;
+	bool f_rebalance{false};
 };
 
 
@@ -125,9 +141,7 @@ public:
 		map_partions = map_part;
 	}
 
-	~KProducer() {
-		delete _producer;
-	}
+	~KProducer() { delete _producer; }
 
 private:
 	RdKafka::Producer* _producer{nullptr};
@@ -163,9 +177,23 @@ public:
 		return _consumer->consume(time_out);
 	}
 
+	void commit()
+	{
+		_consumer->commitSync();
+	}
+
 	void reset_eof_partion()
 	{
 		rebalance_cb->reset_eof_partion();
+	}
+
+	void wait_rebalance()
+	{
+		while (!rebalance_cb->is_rebalanced())
+		{
+			_consumer->poll(100);
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
 	}
 
 	template<typename F, typename E>
@@ -247,7 +275,8 @@ class KEventCb : public RdKafka::EventCb
 {
 public:
 	void event_cb (RdKafka::Event &event);
-	bool run{true};
+private:
+	bool run{false};
 };
 
 
@@ -258,6 +287,16 @@ public:
 	{
 		conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
 		topic_conf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
+	}
+
+	KClient(KClient&& rhs)
+			: event_cb(std::move(rhs.event_cb))
+			, rebalance_cb(std::move(rhs.rebalance_cb))
+			, conf{rhs.conf}
+			, topic_conf{rhs.topic_conf}
+			, brokers(std::move(rhs.brokers))
+			, map_partions(std::move(rhs.map_partions))
+	{
 	}
 
 	KClient(std::string i_brokers)

@@ -73,9 +73,9 @@ void KClient::default_topic_conf()
 	RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
 	setConf(tconf, "auto.commit.enable", "true");
 
-	//setConf(tconf, "auto.offset.reset", "earliest");
+	setConf(tconf, "auto.offset.reset", "smallest");
 	/* Consumer groups always use broker based offset storage */
-	//setConf(tconf, "offset.store.method", "broker");
+	setConf(tconf, "offset.store.method", "broker");
 
 	conf->set("default_topic_conf", tconf, errstr);
 	std::cout << errstr << std::endl;
@@ -120,35 +120,40 @@ void KConsumer::close()
 void KEventCb::event_cb(RdKafka::Event &event)
 {
 	kutil::print_time();
-
 	switch (event.type())
 	{
 		case RdKafka::Event::EVENT_ERROR:
+		{
 			std::cerr << "ERROR (" << RdKafka::err2str(event.err()) << "): " <<
 					  event.str() << std::endl;
 			if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN)
 				run = false;
 			break;
-
+		}
 		case RdKafka::Event::EVENT_STATS:
+		{
 			std::cerr << "\"STATS\": " << event.str() << std::endl;
 			break;
-
+		}
 		case RdKafka::Event::EVENT_LOG:
+		{
 			fprintf(stderr, "LOG-%i-%s: %s\n",
 					event.severity(), event.fac().c_str(), event.str().c_str());
 			break;
-
+		}
 		case RdKafka::Event::EVENT_THROTTLE:
+		{
 			std::cerr << "THROTTLED: " << event.throttle_time() << "ms by " <<
 					  event.broker_name() << " id " << (int)event.broker_id() << std::endl;
 			break;
-
+		}
 		default:
+		{
 			std::cerr << "EVENT " << event.type() <<
 					  " (" << RdKafka::err2str(event.err()) << "): " <<
 					  event.str() << std::endl;
 			break;
+		}
 	}
 }
 
@@ -163,7 +168,10 @@ void KRebalanceCb::rebalance_cb(RdKafka::KafkaConsumer *consumer, RdKafka::Error
 	if (err == RdKafka::ERR__ASSIGN_PARTITIONS)
 	{
 		consumer->assign(partitions);
+		//consumer->position(partitions);
 		partition_cnt = partitions.size();
+		std::lock_guard<std::mutex> l{m};
+		f_rebalance = true;
 	}
 	else
 	{
