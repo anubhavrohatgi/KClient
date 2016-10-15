@@ -8,7 +8,7 @@
 #include <zmq.hpp>
 #include <thread>
 #include <fstream>
-#include <atomic>
+#include <mutex>
 #include "util.h"
 
 
