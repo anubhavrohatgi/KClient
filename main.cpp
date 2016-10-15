@@ -115,8 +115,6 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 		consumer.wait_rebalance();
 		size_t msg_cnt{};
 
-		//std::this_thread::sleep_for(std::chrono::seconds(10));
-
 		consumer.for_each(1000, [&msg_cnt](const RdKafka::Message& message){
 			//std::cout << "Read msg at offset " << message->offset() << "\n";
 			if (message.key())

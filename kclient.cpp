@@ -33,6 +33,9 @@ KConsumer KClient::create_consumer()
 		throw std::runtime_error("Failed to create consumer: " + errstr);
 
 	KConsumer kconsumer{consumer};
+	setConf(topic_conf, "offset.store.method", "broker");
+	setConf(topic_conf, "auto.commit.enable", "true");
+
 	kconsumer.setTopicConf(topic_conf);
 	kconsumer.setRebalanceCb(&rebalance_cb);
 	return kconsumer;
@@ -73,7 +76,7 @@ void KClient::default_topic_conf()
 	RdKafka::Conf *tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
 	setConf(tconf, "auto.commit.enable", "true");
 
-	setConf(tconf, "auto.offset.reset", "smallest");
+	//setConf(tconf, "auto.offset.reset", "latest");
 	/* Consumer groups always use broker based offset storage */
 	setConf(tconf, "offset.store.method", "broker");
 
