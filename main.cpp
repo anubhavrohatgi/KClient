@@ -151,12 +151,11 @@ void consumer(KClient& client, const std::map<std::string, std::string>& params)
 }
 
 
-KClient create_kclient(std::map<std::string, std::string>& params)
+void setup_kclient(KClient& client, std::map<std::string, std::string>& params)
 {
 	/*
 	 * Set basic configuration
 	 */
-	KClient client(params["brokers"]);
 	if (!client.setGlobalConf("statistics.interval.ms", "5000"))
 		exit(1);
 
@@ -172,8 +171,6 @@ KClient create_kclient(std::map<std::string, std::string>& params)
 		std::cerr << "Problem loading metadata\n";
 		exit(1);
 	}
-
-	return client;
 }
 
 
@@ -272,14 +269,17 @@ int main(int argc, char* argv[])
 	{
 		case PRODUCER:
 		{
-			auto client = create_kclient(params);
+			KClient client{params["brokers"]};
+			setup_kclient(client, params);
+
 			producer(client, params);
 			RdKafka::wait_destroyed(5000);
 			break;
 		}
 		case CONUSMER:
 		{
-			auto client = create_kclient(params);
+			KClient client{params["brokers"]};
+			setup_kclient(client, params);
 			consumer(client, params);
 			RdKafka::wait_destroyed(5000);
 			break;
