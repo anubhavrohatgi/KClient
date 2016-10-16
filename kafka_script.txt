@@ -1,0 +1,45 @@
+=====================================================
+				  Start ZooKeeper
+=====================================================
+
+echo -ne "\033]30;ZK\007" && ./bin/zookeeper-server-start.sh config/zookeeper.properties
+
+
+=====================================================
+				Start
+=====================================================
+
+
+echo -ne "\033]30;KAFKA 0\007" && JMX_PORT=9997 ./bin/kafka-server-start.sh config/server0.properties
+echo -ne "\033]30;KAFKA 1\007" && JMX_PORT=9998 ./bin/kafka-server-start.sh config/server1.properties
+echo -ne "\033]30;KAFKA 2\007" && JMX_PORT=9999 ./bin/kafka-server-start.sh config/server2.properties
+
+
+
+=====================================================
+				Create Topic (test)
+=====================================================
+
+./bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 2 --topic ktest
+./bin/kafka-topics.sh --delete --topic ktest --zookeeper localhost:2181
+
+
+
+=====================================================
+				TEST
+=====================================================
+
+
+time ./TicketKafka --mode producer -p 0 --data-in /mnt/disk-master/DATA2 --topic ktest --brokers "localhost:9092,localhost:9093,localhost:9094"
+
+time ./TicketKafka --mode consumer -e --group-id mygrp --topic ktest --brokers "localhost:9092,localhost:9093,localhost:9094"
+
+time ./TicketKafka --mode fake-producer --data-in /mnt/disk-master/DATA2  2,70s user 5,48s system 80% cpu 10,188 total
+
+
+=====================================================
+				Connect, Schema
+=====================================================
+
+echo -ne "\033]30;SCHEMA\007" && ./bin/schema-registry-start etc/schema-registry/schema-registry.properties
+echo -ne "\033]30;CONNECT\007" &&./bin/connect-standalone ./etc/schema-registry/connect-avro-standalone.properties ./etc/kafka/connect-file-source.properties ./etc/kafka/connect-console-sink.properties
