@@ -20,39 +20,58 @@ size_t produce_file(const std::string& fname, KProducer& producer, KTopic& topic
 	{
 		std::string line;
 		std::getline(f, line);
-
-		while(true)
-		{
-			RdKafka::ErrorCode resp = topic.produce(line, part);
-			if (resp == RdKafka::ERR__QUEUE_FULL)
-				producer.poll(10);
-			else if (resp != RdKafka::ERR_NO_ERROR)
-				std::cerr << "> Producer error: " << RdKafka::err2str(resp) << "\n";
-			else
-				break;
-		}
-
+		if (!topic.sync_produce(line, part))
+			break; //error
 		n_msg++;
 	}
 	return n_msg;
 }
 
-void produce_file(const std::string& fname, std::ofstream& fout)
+size_t produce_file(const std::string& fname, std::ofstream& fout)
 {
+	size_t n_msg{};
 	std::ifstream f{fname};
-	std::string line;
 
 	while(f)
 	{
+		std::string line;
 		std::getline(f, line);
 		fout << line << "\n";
+		n_msg++;
 	}
 	fout.flush();
+	return n_msg;
 }
 
 
 void zmq_server();
 void zmq_client();
+
+
+void fake_producer(const std::map<std::string, std::string>& params)
+{
+	using namespace boost::filesystem;
+
+	try
+	{
+		size_t n_msg{};
+		std::ofstream f_out{"test_out.txt"};
+
+		path p(params.at("data_in"));
+		for (directory_entry& x : directory_iterator(p))
+		{
+			const auto fname = x.path().string();
+			n_msg += produce_file(x.path().string(), f_out);
+			std::cout << "done: " << fname << "\n";
+		}
+
+		std::cout << "Tot message: " << n_msg << "\n";
+	}
+	catch (std::exception& ex)
+	{
+		std::cerr << "Error: " << ex.what() << std::endl;
+	}
+}
 
 
 void producer(KClient& client, const std::map<std::string, std::string>& params)
@@ -177,7 +196,7 @@ void setup_kclient(KClient& client, std::map<std::string, std::string>& params)
 
 int main(int argc, char* argv[])
 {
-	enum mode_t {PRODUCER, CONUSMER, ZEROMQ_SERVER, ZEROMQ_CLIENT};
+	enum mode_t {PRODUCER, CONUSMER, ZEROMQ_SERVER, ZEROMQ_CLIENT, FAKE_PRODUCER};
 
 	char hostname[128];
 	if (gethostname(hostname, sizeof(hostname)))
@@ -255,6 +274,8 @@ int main(int argc, char* argv[])
 		mode = PRODUCER;
 	else if (params["mode"] == "consumer")
 		mode = CONUSMER;
+	else if (params["mode"] == "fake-producer")
+		mode = FAKE_PRODUCER;
 	else if (params["mode"] == "zmq-server")
 		mode = ZEROMQ_SERVER;
 	else if (params["mode"] == "zmq-client")
@@ -282,6 +303,11 @@ int main(int argc, char* argv[])
 			setup_kclient(client, params);
 			consumer(client, params);
 			RdKafka::wait_destroyed(5000);
+			break;
+		}
+		case FAKE_PRODUCER:
+		{
+			fake_producer(params);
 			break;
 		}
 		case ZEROMQ_SERVER:

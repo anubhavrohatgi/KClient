@@ -101,9 +101,22 @@ public:
 								  NULL, NULL);
 	}
 
-	RdKafka::ErrorCode produce(std::string msg)
+	bool sync_produce(const std::string& msg, int32_t partition)
 	{
-		return produce(msg, RdKafka::Topic::PARTITION_UA);
+		while(true)
+		{
+			RdKafka::ErrorCode resp = produce(msg, partition);
+			if (resp == RdKafka::ERR__QUEUE_FULL)
+				_producer->poll(10);
+			else if (resp != RdKafka::ERR_NO_ERROR)
+			{
+				std::cerr << "> Producer error: " << RdKafka::err2str(resp) << "\n";
+				return false;
+			}
+			else
+				return true;
+		}
+		return false;
 	}
 
 	RdKafka::Metadata* metadata(int timeout_ms);
