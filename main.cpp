@@ -55,7 +55,7 @@ void fake_producer(const std::map<std::string, std::string>& params)
 	try
 	{
 		size_t n_msg{};
-		std::ofstream f_out{"test_out.txt"};
+		std::ofstream f_out{params.at("data_out") + "/test_out.txt"};
 
 		path p(params.at("data_in"));
 		for (directory_entry& x : directory_iterator(p))
@@ -205,11 +205,16 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
+	std::map<std::string, std::string> params;
+	params["brokers"] = "localhost";
+	params["topic"] = "test";
+	params["client.id"] = hostname;
+	params["data_out"] = ".";
+
 	/*
 	 * Read input parameter
 	 */
 
-	std::map<std::string, std::string> params;
 	for (int i = 0; i < argc; i++)
 	{
 		if(strcmp(argv[i], "--topic") == 0)
@@ -251,23 +256,17 @@ int main(int argc, char* argv[])
 			params["data_in"] = argv[i+1];
 			i++;
 		}
+		else if(strcmp(argv[i], "--data-out") == 0)
+		{
+			params["data_out"] = argv[i+1];
+			i++;
+		}
 		else if(strcmp(argv[i], "-e") == 0)
 		{
 			params["exit"] = "true";
 		}
 	}
 
-	if (params["brokers"].empty())
-		params["brokers"] = "localhost";
-
-	if (params["topic"].empty())
-		params["topic"] = "test";
-
-	if (params["client.id"].empty())
-		params["client.id"] = hostname;
-
-	if (params["data_in"].empty())
-		params["data_in"] = "/mnt/disk-master/DATA_TX";
 
 	mode_t mode;
 	if (params["mode"] == "producer")

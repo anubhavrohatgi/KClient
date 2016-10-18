@@ -190,7 +190,6 @@ public:
 		return _consumer->consume(time_out);
 	}
 
-
 	void commit()
 	{
 		_consumer->commitSync();
@@ -281,7 +280,7 @@ public:
 private:
 	RdKafka::KafkaConsumer* _consumer{nullptr};
 	RdKafka::Conf* topic_conf{nullptr};
-	KRebalanceCb* rebalance_cb;
+	KRebalanceCb* rebalance_cb{nullptr};
 };
 
 

@@ -171,7 +171,6 @@ void KRebalanceCb::rebalance_cb(RdKafka::KafkaConsumer *consumer, RdKafka::Error
 	if (err == RdKafka::ERR__ASSIGN_PARTITIONS)
 	{
 		consumer->assign(partitions);
-		//consumer->position(partitions);
 		partition_cnt = partitions.size();
 		std::lock_guard<std::mutex> l{m};
 		f_rebalance = true;
