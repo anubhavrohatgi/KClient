@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 
 project(TicketKafka)
 
-#set(CMAKE_MODULE_PATH "~/cmake/Modules" ${CMAKE_MODULE_PATH})
-#MESSAGE(STATUS ${CMAKE_MODULE_PATH})
-
 
 ### Download dependencies
 ADD_SUBDIRECTORY(3rdParty)
