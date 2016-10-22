@@ -82,7 +82,7 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
 	try
 	{
 		size_t n_msg{};
-		int32_t part{};
+		int32_t part{RdKafka::Topic::PARTITION_UA};
 		//std::ofstream f_out{"test_out.txt"};
 		KProducer producer = client.create_producer();
 		std::cout << "> Created producer " << producer.name() << std::endl;
@@ -100,6 +100,7 @@ void producer(KClient& client, const std::map<std::string, std::string>& params)
 			n_msg += produce_file(fname, producer, topic, part);
 			//produce_file(x.path().string(), f_out);
 			std::cout << "done: " << fname << "\n";
+			producer.poll(10);
 		}
 
 		while (producer.outq_len() > 0)
