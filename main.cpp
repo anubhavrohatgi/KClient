@@ -186,7 +186,7 @@ void setup_kclient(KClient& client, std::map<std::string, std::string>& params)
 		exit(1);
 
 	// load metadata
-	if (!client.loadMetadata(params["topic"]))
+	if (params["metadata"] == "true" && !client.loadMetadata(params["topic"]))
 	{
 		std::cerr << "Problem loading metadata\n";
 		exit(1);
@@ -211,6 +211,7 @@ int main(int argc, char* argv[])
 	params["topic"] = "test";
 	params["client.id"] = hostname;
 	params["data_out"] = ".";
+	params["metadata"] = "";
 
 	/*
 	 * Read input parameter
@@ -251,6 +252,10 @@ int main(int argc, char* argv[])
 		{
 			params["partition"] = argv[i+1];
 			i++;
+		}
+		else if(strcmp(argv[i], "--load-metadata") == 0)
+		{
+			params["metadata"] = "true";
 		}
 		else if(strcmp(argv[i], "--data-in") == 0)
 		{

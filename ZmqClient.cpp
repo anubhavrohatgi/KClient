@@ -12,7 +12,7 @@ ZmqClient::ZmqClient()
 	, syncservice{ctx, ZMQ_REP}
 {
 	c_socket.bind("tcp://*:5560");
-	int sndhwm{};
+	int sndhwm{100000};
 	c_socket.setsockopt (ZMQ_SNDHWM, &sndhwm, sizeof (sndhwm));
 	syncservice.bind("tcp://*:5562");
 }
@@ -46,25 +46,11 @@ void ZmqClient::close()
 
 void ZmqClient::send(const std::string &msg)
 {
-	while (true)
+	zmq::message_t zmsg{msg.c_str(), msg.size()};
+	while(!c_socket.send(zmsg))
 	{
-		std::unique_lock<std::mutex> l(m);
-		if (client_rec == 0)
-		{
-			l.unlock();
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-			break;
-		}
-
-		const auto diff = sent - client_rec;
-		if (diff < 10000)
-			break;
-
-		l.unlock();
-		std::this_thread::sleep_for(std::chrono::milliseconds(20));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
-
-	s_send(c_socket, msg);
 	sent++;
 }
 

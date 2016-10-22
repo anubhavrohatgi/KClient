@@ -37,10 +37,12 @@ void zmq_client()
 
 	size_t c{};
 	ZmqClient zmq_client;
-	path p("/mnt/disk-master/DATA_TX");
+	path p("/mnt/disk-master/DATA2");
 
-	zmq_client.wait_client();
-	std::thread th_sync{&ZmqClient::sync_loop, &zmq_client};
+	std::this_thread::sleep_for(std::chrono::seconds(10));
+	std::cout << "Start producing Data\n";
+	//zmq_client.wait_client();
+	//std::thread th_sync{&ZmqClient::sync_loop, &zmq_client};
 
 	for (directory_entry& x : directory_iterator(p))
 	{
@@ -54,10 +56,11 @@ void zmq_client()
 	}
 
 	zmq_client.send("###EXIT###");
-	zmq_client.wait_client();
+	//zmq_client.wait_client();
+	std::this_thread::sleep_for(std::chrono::seconds(10));
 
-	zmq_client.stop();
-	th_sync.join();
+	//zmq_client.stop();
+	//th_sync.join();
 	zmq_client.close();
 
 	std::cout << "Messages produces: " << c << "\n";

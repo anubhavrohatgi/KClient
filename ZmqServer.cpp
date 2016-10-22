@@ -3,6 +3,8 @@
 //
 
 #include <mutex>
+#include <atomic>
+#include <queue>
 #include "ZmqServer.h"
 #include "zhelpers.hpp"
 
@@ -14,7 +16,8 @@ ZmqServer::ZmqServer()
 {
 	subscriber.connect(c_endpoint);
 	subscriber.setsockopt(ZMQ_SUBSCRIBE, "", 0);
-
+	int sndhwm{100000};
+	subscriber.setsockopt (ZMQ_SNDHWM, &sndhwm, sizeof (sndhwm));
 	syncservice.connect("tcp://127.0.0.1:5562");
 }
 
@@ -36,32 +39,50 @@ void ZmqServer::sync_loop()
 
 void ZmqServer::run()
 {
-	std::ofstream f{"out_pubsub.txt"};
 	received = 0;
-	m_stop = false;
+	std::atomic<bool> stop{false};
+	std::queue<std::string> q_data;
+	std::mutex m;
 
-	s_send(syncservice, "READY");
-	s_recv(syncservice);
-	std::thread th_sync{&ZmqServer::sync_loop, this};
+	std::thread th_w{[this, &m, &q_data, &stop](){
+		std::ofstream f{"out_pubsub.txt"};
+
+		while (!stop)
+		{
+			std::unique_lock<std::mutex> l(m);
+			if (q_data.empty())
+			{
+				l.unlock();
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
+			else
+			{
+				f << q_data.front() << "\n";
+				q_data.pop();
+			}
+		}
+
+		while(!q_data.empty())
+		{
+			f << q_data.front() << "\n";
+			q_data.pop();
+		}
+	}};
 
 	while (true)
 	{
 		const auto msg_str = s_recv(subscriber);
-		f << msg_str << "\n";
-
 		if (msg_str == "###EXIT###")
 			break;
 
 		received++;
+		std::unique_lock<std::mutex> l(m);
+		q_data.push(msg_str);
 	}
-	m_stop = true;
+	stop = true;
 	std::cout << "Exit from main loop (" << received << ")\n";
 
-	s_send(syncservice, "DONE");
-	s_recv(syncservice);
-
-	th_sync.join();
+	th_w.join();
 
 	subscriber.close();
-	f.flush();
 }
