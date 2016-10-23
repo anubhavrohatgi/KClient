@@ -6,7 +6,7 @@ ExternalProject_Add(LIBRDKAFKA_BUILD
         URL http://www.meocci.it/librdkafka-debian-0.9.1-1.tar.gz
         UPDATE_COMMAND ""
         BUILD_IN_SOURCE ON
-        CONFIGURE_COMMAND ./configure --prefix=<INSTALL_DIR> ${CONFIGURE_FLAGS}
+        CONFIGURE_COMMAND ./configure --prefix=<INSTALL_DIR> --mbits 64
         BUILD_COMMAND make -j4
         INSTALL_COMMAND make install
         INSTALL_DIR INSTALL
