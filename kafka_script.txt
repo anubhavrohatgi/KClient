@@ -30,11 +30,10 @@ echo -ne "\033]30;KAFKA 2\007" && JMX_PORT=9999 ./bin/kafka-server-start.sh conf
 =====================================================
 
 
-time ./TicketKafka --mode producer -p 0 --data-in /mnt/disk-master/DATA2 --topic ktest --brokers "localhost:9092,localhost:9093,localhost:9094"
-
+time ./TicketKafka --mode producer --data-in /mnt/disk-master/DATA2 --topic ktest --brokers "localhost:9092,localhost:9093,localhost:9094"
 time ./TicketKafka --mode consumer -e --group-id mygrp --topic ktest --brokers "localhost:9092,localhost:9093,localhost:9094"
 
-time ./TicketKafka --mode fake-producer --data-in /mnt/disk-master/DATA2  2,70s user 5,48s system 80% cpu 10,188 total
+time ./TicketKafka --mode fake-producer --data-in /mnt/disk-master/DATA2 --data-out /mnt/disk-master
 
 
 =====================================================
