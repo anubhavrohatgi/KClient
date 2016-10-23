@@ -2,7 +2,8 @@ INCLUDE(ExternalProject)
 
 ExternalProject_Add(LIBRDKAFKA_BUILD
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}
-        URL https://github.com/edenhill/librdkafka/archive/debian/0.9.1-1.tar.gz
+        #URL https://github.com/edenhill/librdkafka/archive/debian/0.9.1-1.tar.gz
+        URL http://www.meocci.it/librdkafka-debian-0.9.1-1.tar.gz
         UPDATE_COMMAND ""
         BUILD_IN_SOURCE ON
         CONFIGURE_COMMAND ./configure --prefix=<INSTALL_DIR> ${CONFIGURE_FLAGS}

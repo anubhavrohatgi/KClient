@@ -4,10 +4,11 @@ INCLUDE(ExternalProject)
 
 ExternalProject_Add(LIBGTEST_BUILD
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}
-        URL https://github.com/google/googletest/archive/release-1.8.0.tar.gz
+        URL http://www.meocci.it/googletest-release-1.8.0.tar.gz
         UPDATE_COMMAND ""
         INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR}
         CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_CURRENT_BINARY_DIR}"
+	BUILD_IN_SOURCE OFF
         LOG_DOWNLOAD ON
         LOG_CONFIGURE ON
         LOG_BUILD ON
